@@ -1,7 +1,9 @@
 # LAS/FLAS & DPQ
 
 **Kai Barthel, Nico Hezel, Klaus Jung, and Konstantin Schall**
+
 **HTW Berlin, Visual Computing Group, Germany**
+
 [Visual Computing Group](https://visual-computing.com/)
 
 This is an example implementation of the algorithms from the paper 
