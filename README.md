@@ -15,12 +15,12 @@ In addition, we introduce Fast Linear Assignment Sorting (FLAS) as a new algorit
 
 ### Distance Preservation Quality (DPQ)
 
-<div style="text-align:center">
+<div align="center">
     <img src="images/delta_D_plot.png" width="60%" title="" alt="main_pic"></img>
 </div>
 
 
-<div style="text-align:center">
+<div align="center">
     <img src="images/DPQ_eq.png" width="60%" title="" alt="main_pic"></img>
 </div>
 
@@ -36,7 +36,8 @@ Fast Linear Assignments Sorting (FLAS) is able to handle larger quantities of ve
 
 
 <p float="top" align="middle">
-    <img src="images/LAS_algo.png" width="45%" title="" alt="main_pic" style="margin: 0px 10px 13.35% 0px"></img>
+    <img src="images/LAS_algo.png" width="45%" title="" alt="main_pic" align="top" margin="1000px"></img>
+    &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
     <img src="images/FLAS_algo.png" width="45%" title="" alt="main_pic"></img>
 </p>
 
