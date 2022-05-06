@@ -40,7 +40,7 @@ We define the Distance Preservation Gain ∆D as the difference between the aver
 
 Both algorithmns sort a given number of vectors on a 2-dimensional grid using a linear-assignement solver. 
 
-LAS (Linear Assignment Sorting) uses all vectors at each step, which results in good arrangements, but becomes quite slow with a large number of vectors. Linear Assignment Sorting is a simple algorithm with very good sorting quality. However, for larger sets the computational complexity of the LAS algorithm becomes too high. 
+LAS (Linear Assignment Sorting) is a simple algorithm that uses all vectors at each step, which results in good arrangements, but becomes quite slow for larger sets of vectors. 
 
 Fast Linear Assignments Sorting (FLAS) is able to handle larger quantities of vectors by replacing the global assignment with multiple local swaps. This approach allows much faster sorting while having little impact on the quality of the arrangement.
 
