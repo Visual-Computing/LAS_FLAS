@@ -34,7 +34,7 @@ In addition, we introduce Fast Linear Assignment Sorting (FLAS) as a new algorit
     <img src="images/DPQ_eq.png" width="60%" title="" alt="main_pic"></img>
 </div>
 
-We define the Distance Preservation Gain ∆D as the difference between the average neighborhood distance of a random arrangement and a sorted arrangement S. The final Distance Preservation DPQ(S) is then the ratio between the p-norm of ∆D of given S and from a theoretical optimal arrangement, where all distances are perfectly preserved.
+We define the Distance Preservation Gain vector ∆D as the difference between the average neighborhood distances of a random arrangement and a sorted arrangement S. The final Distance Preservation Quality DPQ(S)_p is then the ratio between the p-norms of ∆D of the given sorted arrangement S and that of a theoretical optimal arrangement, where all distances are perfectly preserved.
 
 ### LAS and FLAS
 
