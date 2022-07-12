@@ -13,7 +13,7 @@ This is an example implementation of the algorithms from the paper
 
 which was submitted to COMPUTER GRAPHICS Forum.  
 
-
+([ArXiv](https://arxiv.org/abs/2205.04255))
 
 
 <img src="images/teaser.png" width="100%" title="" alt="main_pic"></img>
@@ -61,4 +61,18 @@ Please install the python packages listed in [requirements.txt](requirements.txt
 
 ```bash
 pip install -r requirements.txt
+```
+
+## Reference
+
+Reference to cite when you use any of the presented algorithms in a research paper:
+```
+@misc{FLAS_DPQ,
+  doi = {10.48550/ARXIV.2205.04255},
+  url = {https://arxiv.org/abs/2205.04255},
+  author = {Barthel, Kai Uwe and Hezel, Nico and Jung, Klaus and Schall, Konstantin},
+  title = {Improved Evaluation and Generation of Grid Layouts using Distance Preservation Quality and Linear Assignment Sorting},
+  publisher = {arXiv},
+  year = {2022}
+}
 ```
