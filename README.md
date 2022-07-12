@@ -65,7 +65,7 @@ pip install -r requirements.txt
 
 ## Reference
 
-Reference to cite when you use any of the presented algorithms in a research paper:
+Reference to cite when you use any of the presented algorithmns in a research paper:
 ```
 @misc{FLAS_DPQ,
   doi = {10.48550/ARXIV.2205.04255},
