@@ -63,6 +63,9 @@ Please install the python packages listed in [requirements.txt](requirements.txt
 pip install -r requirements.txt
 ```
 
+*Update*
+We added the images and feature vectors from the sets described in the paper. You can try them out in this [notebook](DPQ_LAS&DPQ_LAS&FLAS_withImages_FV50.ipynb). Please unzip the data.zip file before running this notebook.
+
 ## Reference
 
 Reference to cite when you use any of the presented algorithmns in a research paper:
