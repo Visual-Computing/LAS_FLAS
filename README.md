@@ -11,9 +11,7 @@ This is an example implementation of the algorithms from the paper
 ***Improved Evaluation and Generation of Grid Layouts using Distance Preservation Quality and Linear Assignment Sorting*** 
 
 
-which was submitted to COMPUTER GRAPHICS Forum.  
-
-([Wiley](https://onlinelibrary.wiley.com/doi/full/10.1111/cgf.14718))
+which was submitted to COMPUTER GRAPHICS Forum. ([Download the paper from Wiley](https://onlinelibrary.wiley.com/doi/full/10.1111/cgf.14718))
 
 
 <img src="images/teaser.png" width="100%" title="" alt="main_pic"></img>
@@ -68,14 +66,18 @@ We added the images and feature vectors from the sets described in the paper. Yo
 
 ## Reference
 
-Reference to cite when you use any of the presented algorithmns in a research paper:
+Reference to cite when you use any of the presented algorithms in a research paper:
 ```
-@misc{FLAS_DPQ,
-  doi = {10.48550/ARXIV.2205.04255},
-  url = {https://arxiv.org/abs/2205.04255},
-  author = {Barthel, Kai Uwe and Hezel, Nico and Jung, Klaus and Schall, Konstantin},
-  title = {Improved Evaluation and Generation of Grid Layouts using Distance Preservation Quality and Linear Assignment Sorting},
-  publisher = {arXiv},
-  year = {2022}
+@article{https://doi.org/10.1111/cgf.14718,
+    author = {Barthel, K. U. and Hezel, N. and Jung, K. and Schall, K.},
+    title = {Improved Evaluation and Generation Of Grid Layouts Using Distance Preservation Quality and Linear Assignment Sorting},
+    journal = {Computer Graphics Forum},
+    volume = {42},
+    number = {1},
+    pages = {261-276},
+    keywords = {interaction, user studies, visualization, information visualization, high dimensional sorting, assistive interfaces},
+    doi = {https://doi.org/10.1111/cgf.14718},
+    url = {https://onlinelibrary.wiley.com/doi/abs/10.1111/cgf.14718},
+    year = {2023}
 }
 ```
