@@ -13,7 +13,7 @@ This is an example implementation of the algorithms from the paper
 
 which was submitted to COMPUTER GRAPHICS Forum.  
 
-([ArXiv](https://arxiv.org/abs/2205.04255))
+([Wiley](https://onlinelibrary.wiley.com/doi/full/10.1111/cgf.14718))
 
 
 <img src="images/teaser.png" width="100%" title="" alt="main_pic"></img>
