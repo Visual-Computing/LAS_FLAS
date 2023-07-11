@@ -11,7 +11,7 @@ This is an example implementation of the algorithms from the paper
 ***Improved Evaluation and Generation of Grid Layouts using Distance Preservation Quality and Linear Assignment Sorting*** 
 
 
-which was submitted to COMPUTER GRAPHICS Forum. ([Download the paper from Wiley](https://onlinelibrary.wiley.com/doi/full/10.1111/cgf.14718))
+which was submitted to COMPUTER GRAPHICS Forum. ([https://onlinelibrary.wiley.com/doi/full/10.1111/cgf.14718](https://onlinelibrary.wiley.com/doi/full/10.1111/cgf.14718))
 
 
 <img src="images/teaser.png" width="100%" title="" alt="main_pic"></img>
