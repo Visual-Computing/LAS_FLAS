@@ -18,7 +18,7 @@ import de.htw.lcs.ag.solver.JonkerVolgenantGo;
 public class LAS<T extends Describable> implements ArrangingGrid<T> {
 	
 	public static final int QUANT = 2048; 		// TODO  quantized distance
-	public static final float SomAlpha = 0.5f;
+	public static final float MapAlpha = 0.5f;
 		
 	// hyper parameter 
 	public static int NumFilters = 2;
@@ -46,7 +46,7 @@ public class LAS<T extends Describable> implements ArrangingGrid<T> {
 		final int gridSize = columns*rows;
 		final int dim = Arrays.stream(imageGrid.getElements()).filter(Objects::nonNull).mapToInt(e -> e.getFeature().length).max().orElse(-1);
 		
-		final float[][] som = new float[gridSize][dim];
+		float[][] map = new float[gridSize][dim];
 		
 		final T[] swapedElements = Arrays.copyOf(imageGrid.getElements(), gridSize);
 		this.distLutF  = new float[gridSize][gridSize];
@@ -61,10 +61,10 @@ public class LAS<T extends Describable> implements ArrangingGrid<T> {
 			final int radiusX = Math.min(columns-1, radius);
 			final int radiusY = Math.min(rows-1, radius);
 			
-			copyFeatureVectorsToSom(imageGrid, som, SomAlpha);
+			copyFeatureVectorsToMap(imageGrid, map, MapAlpha);
 			for (int i = 0; i < NumFilters; i++) 
-				filterSom(radiusX, radiusY, columns, rows, som, dim, doWrap);
-			checkAllSwaps(imageGrid, som, swapedElements);
+				map = filterMap(radiusX, radiusY, columns, rows, map, dim, doWrap);
+			checkAllSwaps(imageGrid, map, swapedElements);
 		
 			rad =  rad*RadiusDecay;  
 		}
@@ -74,13 +74,13 @@ public class LAS<T extends Describable> implements ArrangingGrid<T> {
 	}
 
 
-	private void copyFeatureVectorsToSom(Grid<T> imageGrid, float[][] som, float alpha) {
+	private void copyFeatureVectorsToMap(Grid<T> imageGrid, float[][] map, float alpha) {
 		final T[] elements = imageGrid.getElements();
 		for (int pos = 0; pos < elements.length; pos++)  {
 			final float[] fv = elements[pos].getFeature();
-			final float[] somCell = som[pos];
+			final float[] mapCell = map[pos];
 			for (int i = 0; i < fv.length; i++) 
-				somCell[i] = somCell[i] * alpha + fv[i] * (1-alpha);
+				mapCell[i] = mapCell[i] * alpha + fv[i] * (1-alpha);
 		}
 	}
 		
@@ -88,25 +88,29 @@ public class LAS<T extends Describable> implements ArrangingGrid<T> {
 	// ---------------------------------------- Filter part-------------------------------------------------
 	// -------------------------------------------------------------------------------------------------------------
 	
-	protected static void filterSom(int actRadiusX, int actRadiusY, int columns, int rows, float[][] som, int dim, boolean doWrap) {
+	protected static float[][] filterMap(int actRadiusX, int actRadiusY, int columns, int rows, float[][] map, int dim, boolean doWrap) {
 
 		int filterSizeX = 2*actRadiusX+1;
 		int filterSizeY = 2*actRadiusY+1;
 
-		float[][] somH = new float[rows * columns][dim];
-		
 		if(doWrap) {
-			filterHwrap(som, somH, rows, columns, dim, filterSizeX);
-			filterVwrap(somH, som, rows, columns, dim, filterSizeY);	
+			map = filterHwrap(map, rows, columns, dim, filterSizeX);
+			map = filterVwrap(map, rows, columns, dim, filterSizeY);	
 		}
 		else {
-			filterHmirror(som, somH, rows, columns, dim, filterSizeX);
-			filterVmirror(somH, som, rows, columns, dim, filterSizeY);	
+			map = filterHmirror(map, rows, columns, dim, filterSizeX);
+			map = filterVmirror(map, rows, columns, dim, filterSizeY);	
 		}	
+		return map;
 	}
 	
-	protected static void filterHwrap(float[][] input, float[][] output, int rows, int columns, int dims, int filterSize) {
+	protected static float[][] filterHwrap(float[][] input, int rows, int columns, int dims, int filterSize) {
 
+		if (columns == 1) 
+			return input;
+		
+		float[][] output = new float[rows * columns][dims]; 
+		
 		int ext = filterSize/2;							  // size of the border extension
 
 		float[][] rowExt = new float[columns + 2*ext][];  // extended row
@@ -143,9 +147,16 @@ public class LAS<T extends Describable> implements ArrangingGrid<T> {
 				}
 			}
 		}
+		
+		return output;
 	}
 	
-protected static void filterVwrap(float[][] input, float[][] output, int rows, int columns, int dims, int filterSize) {
+	protected static float[][] filterVwrap(float[][] input, int rows, int columns, int dims, int filterSize) {
+		
+		if (rows == 1) 
+			return input;
+		
+		float[][] output = new float[rows * columns][dims]; 
 		
 		int ext = filterSize/2;		// size of the border extension
 		
@@ -181,49 +192,61 @@ protected static void filterVwrap(float[][] input, float[][] output, int rows, i
 				}
 			}
 		}
+		return output;
 	}
 
-	protected static void filterHmirror(float[][] input, float[][] output, int rows, int columns, int dims, int filterSize) {
-	
+	protected static float[][] filterHmirror(float[][] input, int rows, int columns, int dims, int filterSize) {
+
+		if (columns == 1) 
+			return input;
+		
+		float[][] output = new float[rows * columns][dims]; 
+		
 		int ext = filterSize/2;							  // size of the border extension
-	
+
 		float[][] rowExt = new float[columns + 2*ext][];  // extended row
-	
+
 		// filter the rows
 		for (int y = 0; y < rows; y++) {
-	
+
 			int actRow = y*columns;
-	
+
 			for (int i = 0; i < columns; i++) 
 				rowExt[i+ext] = input[actRow + i]; // copy one row 
-	
+
 			// mirrored extension
 			for (int i = 0; i < ext; i++) {
 				rowExt[ext-1-i] = rowExt[ext+i+1];
 				rowExt[columns + ext+i] = rowExt[columns + ext -2 -i];
 			}
-	
+
 			float[] tmp = new float[dims]; 
 			for (int i = 0; i < filterSize; i++) // first element
 				for (int d = 0; d < dims; d++) 
 					tmp[d] += rowExt[i][d];
-	
+
 			for (int d = 0; d < dims; d++) 
 				output[actRow][d] = tmp[d] / filterSize;
-	
+
 			for (int i = 1; i < columns; i++) { // rest of the row
 				int left = i-1;
 				int right = left + filterSize;
-	
+
 				for (int d = 0; d < dims; d++) { 
 					tmp[d] += rowExt[right][d] - rowExt[left][d];
 					output[actRow + i][d] = tmp[d] / filterSize; 
 				}
 			}
 		}
+		return output;
 	}
 	
-	protected static void filterVmirror(float[][] input, float[][] output, int rows, int columns, int dims, int filterSize) {
+	protected static float[][] filterVmirror(float[][] input, int rows, int columns, int dims, int filterSize) {
+		
+		if (rows == 1) 
+			return input;
+		
+		float[][] output = new float[rows * columns][dims]; 
 		
 		int ext = filterSize/2;		// size of the border extension
 		
@@ -259,23 +282,24 @@ protected static void filterVwrap(float[][] input, float[][] output, int rows, i
 				}
 			}
 		}
+		return output;
 	}
 	
 	// -------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------- Solver part-------------------------------------------------
 	// -------------------------------------------------------------------------------------------------------------
 	
-	private void checkAllSwaps(Grid<T> imageGrid, float[][] som, T[] swapedElements) {
+	private void checkAllSwaps(Grid<T> imageGrid, float[][] map, T[] swapedElements) {
 		final int gridSize = imageGrid.getSize();
 		
-		// set up the array of feature vectors and som features
+		// set up the array of feature vectors and map features
 		final float[][] fvs = new float[gridSize][];		
 		for (int i = 0; i < gridSize; i++) {
 			swapedElements[i] = imageGrid.getElement(i);
 			fvs[i] = swapedElements[i].getFeature();
 		}
 		
-		distLut = calcDistLutL2Int(fvs, som);
+		distLut = calcDistLutL2Int(fvs, map);
 		
 		final int[] permutation = JonkerVolgenantGo.computeAssignment(distLut);		
 		for (int i = 0; i < gridSize; i++) 

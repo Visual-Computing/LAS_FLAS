@@ -31,9 +31,11 @@ import de.htw.lcs.ag.las.LAS;
 public class ConstrainExample {
 
 	public static Path colorGridImage = Paths.get("test_images/colors_1024_random.png");
+//	public static Path colorGridImage = Paths.get("test_images/rgb_4x4x4.png");
 	
 	public static void main(String[] args) throws IOException {
 		test_dense_map(ColorDataset.loadDataset(colorGridImage));
+//		test_dense_map_1D(ColorDataset.loadDataset(colorGridImage));
 //		test_holes_and_fixed_cells(ColorDataset.loadDataset(colorGridImage));
 	}
 
@@ -48,6 +50,30 @@ public class ConstrainExample {
 		final int[] mapSize = findMapSize(allElements.length);
 		final int columns = mapSize[0];
 		final int rows = mapSize[1];
+		Collections.shuffle(Arrays.asList(allElements), rndShuffle);
+		
+		// fix the central element
+		final Grid<T> imageGrid = new Grid<>(columns, rows, allElements);	
+		
+		// sort the grid
+		final ArrangingGrid<T> ag = new FLAS<>(dataset.getFeatureDistanceFunction(), rnd, doWrap);
+//		final ArrangingGrid<T> ag = new LAS<>(dataset.getFeatureDistanceFunction(), rnd, doWrap);
+//		final ArrangingGrid<T> ag = ArrangingGrid.shuffle(rndShuffle);
+//		final ArrangingGrid<T> ag = ArrangingGrid.identity();
+
+		displayArrangement(dataset, ag, imageGrid, dpqMetric, rndShuffle, columns, rows, doWrap);		
+	}
+	
+	public static <T extends Describable> void test_dense_map_1D(Dataset<T> dataset) throws IOException {
+		final boolean doWrap = false;
+
+		final T[] allElements = dataset.getAll();
+		final DistancePreservation<T> dpqMetric = new DistancePreservation<>(allElements, 16);
+		final Random rndShuffle = new Random(7);
+		final Random rnd = new Random(7);
+
+		final int columns = allElements.length;
+		final int rows = 1;
 		Collections.shuffle(Arrays.asList(allElements), rndShuffle);
 		
 		// fix the central element
@@ -126,21 +152,44 @@ public class ConstrainExample {
 			frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 	}
 	
+	/**
+	 * Find a width/height combination which does not have any holes and is close to quadratic.
+	 * 
+	 * @return [width, height]
+	 */
 	public static int[] findMapSize(int numOfElements) {
-		final int[] mapSize = new int[2];
 		
-		int width = (int) Math.sqrt(numOfElements+1);
-		int height = width;
+		int width=0, height=0;
+		int mid = (int) Math.sqrt(numOfElements+1);
 		
-		while (width * height < numOfElements) {
-			width++;
+		int minDiff = Integer.MAX_VALUE; 
+		double bestAngleDiff = Float.MAX_VALUE;
+				
+		for (int h = mid/2; h < 2*mid; h++) {
+			for (int w = mid; w < 2*mid; w++) {
+				int prod = w * h;
+				int diff = prod - numOfElements;
+
+				if (diff >= 0 && diff <= minDiff) {
+					double angle = Math.atan2(h, w);
+					double angleDiff = Math.abs(angle - Math.PI/4);
+
+					if (angleDiff < 0.1*Math.PI/8) {
+						minDiff = diff;
+
+						if (angleDiff < bestAngleDiff) {
+							bestAngleDiff = angleDiff;
+							width = w;
+							height = h;
+						}
+					}
+				}
+			}
 		}
 		
-		mapSize[0] = width;
-		mapSize[1] = height; 
-		
-		return mapSize;
+		return new int[] {width, height};
 	}
+	
 	/**
 	 * Check if each cell is occupied by a unique element
 	 * 

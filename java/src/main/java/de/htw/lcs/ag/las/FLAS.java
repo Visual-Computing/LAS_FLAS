@@ -18,7 +18,7 @@ public class FLAS<T extends Describable> extends LAS<T> {
 	
 	protected static final float WeightHole = 0.01f;    	// TODO adjust to the amount of holes
 	protected static final float WeightSwappable = 1f;  
-	protected static final float WeightNonSwappable = 100f;
+	protected static final float WeightNonSwappable = 10f;
 	
 	protected static final int   QUANT = 256; // /256;  quantized distance steps
 	
@@ -27,7 +27,7 @@ public class FLAS<T extends Describable> extends LAS<T> {
 	public static float SampleFactor = 1.0f;	// 1 the fraction of swaps per iteration
 	static {
 		FLAS.InitialRadiusFactor = 0.5f;
-		FLAS.RadiusDecay = 0.93f;
+		FLAS.RadiusDecay = 0.93f; // for small sets this value should be increased ( < 1 ! )
 		FLAS.EndRadius = 1.0f;
 		FLAS.NumFilters = 1;
 	}
@@ -39,7 +39,7 @@ public class FLAS<T extends Describable> extends LAS<T> {
     private int[] swapPositions;
     private T[] swapedElements;
     private float[][] fvs;
-    private float[][] somFvs;
+    private float[][] mapFvs;
 
 	public FLAS(DistanceFunction<float[]> distanceFunction, Random random, boolean doWrap) {
 		super(distanceFunction, random, doWrap);
@@ -54,14 +54,14 @@ public class FLAS<T extends Describable> extends LAS<T> {
 		final int gridSize = columns*rows;
 		final int dim = Arrays.stream(imageGrid.getElements()).filter(Objects::nonNull).mapToInt(e -> e.getFeature().length).max().orElse(-1);
 
-		final float[][] som = new float[gridSize][dim];
+		float[][] map = new float[gridSize][dim];
 		final float[] weights = new float[gridSize];
 		
 		// temporary variables using the maximal swap position count
 		this.swapPositions = new int[Math.min(MaxSwapPositions, rows*columns)];
 		this.swapedElements = Arrays.copyOf(imageGrid.getElements(), swapPositions.length);
 		this.fvs = new float[swapPositions.length][];
-		this.somFvs = new float[swapPositions.length][];
+		this.mapFvs = new float[swapPositions.length][];
 		this.distLut  = new int[swapPositions.length][swapPositions.length];
 		this.distLutF  = new float[swapPositions.length][swapPositions.length];
 		
@@ -76,10 +76,10 @@ public class FLAS<T extends Describable> extends LAS<T> {
 			final int radiusX = Math.max(1, Math.min(columns/2, radius));
 			final int radiusY = Math.max(1, Math.min(rows/2, radius));
 			
-			copyFeatureVectorsToSom(imageGrid, som, weights, dim);
+			copyFeatureVectorsToMap(imageGrid, map, weights, dim);
 			for (int i = 0; i < NumFilters; i++) 
-				filterWeightedSom(radiusX, radiusY, columns, rows, som, dim, weights, doWrap);
-			checkRandomSwaps(radius, imageGrid, som); 
+				map = filterWeightedMap(radiusX, radiusY, columns, rows, map, dim, weights, doWrap);
+			checkRandomSwaps(radius, imageGrid, map); 
 			
 			rad *= RadiusDecay;  
 		}
@@ -89,23 +89,23 @@ public class FLAS<T extends Describable> extends LAS<T> {
 	}
 
 	
-	private void copyFeatureVectorsToSom(Grid<T> imageGrid, float[][] som, float[] weights, int dim) {
+	private void copyFeatureVectorsToMap(Grid<T> imageGrid, float[][] map, float[] weights, int dim) {
 		final T[] elements = imageGrid.getElements();
 		for (int pos = 0; pos < elements.length; pos++)  {
 			
-			final float[] somCell = som[pos];
+			final float[] mapCell = map[pos];
 					
 			if (elements[pos] != null) {
 				final float[] fv = elements[pos].getFeature();
 				// higher weight for fixed images
 				float w = fixedElements != null && fixedElements[pos] ? WeightNonSwappable : WeightSwappable; 
 				for (int i = 0; i < fv.length; i++) 
-					somCell[i] = w * fv[i];
+					mapCell[i] = w * fv[i];
 				weights[pos] = w; 
 			}
 			else {
 				for (int i = 0; i < dim; i++) 
-					somCell[i] *= WeightHole;
+					mapCell[i] *= WeightHole;
 				weights[pos] = WeightHole;
 			}
 		}
@@ -115,39 +115,42 @@ public class FLAS<T extends Describable> extends LAS<T> {
 	// ---------------------------------------- Filter part-------------------------------------------------
 	// -------------------------------------------------------------------------------------------------------------
 	
-	protected static void filterWeightedSom(int actRadiusX, int actRadiusY, int columns, int rows, float[][] som, int dim, float[] weights, boolean doWrap) {
+	protected static float[][] filterWeightedMap(int actRadiusX, int actRadiusY, int columns, int rows, float[][] map, int dim, float[] weights, boolean doWrap) {
 
 		int filterSizeX = 2*actRadiusX+1;
 		int filterSizeY = 2*actRadiusY+1;
 
-		float[][] somH = new float[rows * columns][dim];
-		float[] weightsH = new float[rows * columns];
-		
 		if(doWrap) {
-			filterHwrap(som, somH, rows, columns, dim, filterSizeX);
-			filterHwrap(weights, weightsH, rows, columns, filterSizeX);
+			map = filterHwrap(map, rows, columns, dim, filterSizeX);
+			weights = filterHwrap(weights, rows, columns, filterSizeX);
 			
-			filterVwrap(somH, som, rows, columns, dim, filterSizeY);	
-			filterVwrap(weightsH, weights, rows, columns, filterSizeY);	
+			map = filterVwrap(map, rows, columns, dim, filterSizeY);	
+			weights = filterVwrap(weights, rows, columns, filterSizeY);	
 			
 		}
 		else {
-			filterHmirror(som, somH, rows, columns, dim, filterSizeX);
-			filterHmirror(weights, weightsH, rows, columns, filterSizeX);
+			map = filterHmirror(map, rows, columns, dim, filterSizeX);
+			weights = filterHmirror(weights, rows, columns, filterSizeX);
 			
-			filterVmirror(somH, som, rows, columns, dim, filterSizeY);	
-			filterVmirror(weightsH, weights, rows, columns, filterSizeY);	
+			map = filterVmirror(map, rows, columns, dim, filterSizeY);	
+			weights = filterVmirror(weights, rows, columns, filterSizeY);	
 		}	
 		
-		for (int i = 0; i < som.length; i++) {
+		for (int i = 0; i < map.length; i++) {
 			float w = 1 / weights[i];
 			for (int d = 0; d < dim; d++) 
-				som[i][d] *= w;		
+				map[i][d] *= w;		
 		}
+		return map;
 	}
 	
-	protected static void filterHwrap(float[] input, float[] output, int rows, int columns, int filterSize) {
+	protected static float[] filterHwrap(float[] input, int rows, int columns, int filterSize) {
 
+		if (columns == 1) 
+			return input;
+		
+		float[] output = new float[rows * columns];
+		
 		int ext = filterSize/2;							  // size of the border extension
 
 		float[] rowExt = new float[columns + 2*ext];  // extended row
@@ -179,9 +182,15 @@ public class FLAS<T extends Describable> extends LAS<T> {
 				output[actRow + i] = tmp / filterSize; 
 			}
 		}
+		return output;
 	}
 	
-	protected static void filterVwrap(float[] input, float[] output, int rows, int columns, int filterSize) {
+	protected static float[] filterVwrap(float[] input, int rows, int columns, int filterSize) {
+		
+		if (rows == 1) 
+			return input;
+		
+		float[] output = new float[rows * columns];
 		
 		int ext = filterSize/2;		// size of the border extension
 		
@@ -213,11 +222,17 @@ public class FLAS<T extends Describable> extends LAS<T> {
 				output[x + i*columns] = tmp / filterSize; 
 			}
 		}
+		return output;
 	}
 	
-	protected static void filterHmirror(float[] input, float[] output, int rows, int columns, int filterSize) {
+	protected static float[] filterHmirror(float[] input, int rows, int columns, int filterSize) {
 
-		int ext = filterSize/2;							  // size of the border extension
+		if (columns == 1) 
+			return input;
+		
+		int ext = filterSize/2;		// size of the border extension
+		
+		float[] output = new float[rows * columns];
 
 		float[] rowExt = new float[columns + 2*ext];  // extended row
 
@@ -249,9 +264,15 @@ public class FLAS<T extends Describable> extends LAS<T> {
 				output[actRow + i] = tmp / filterSize; 
 			}
 		}
+		return output;
 	}
 	
-	protected static void filterVmirror(float[] input, float[] output, int rows, int columns, int filterSize) {
+	protected static float[] filterVmirror(float[] input, int rows, int columns, int filterSize) {
+		
+		if (rows == 1) 
+			return input;
+		
+		float[] output = new float[rows * columns];
 		
 		int ext = filterSize/2;		// size of the border extension
 		
@@ -283,13 +304,14 @@ public class FLAS<T extends Describable> extends LAS<T> {
 				output[x + i*columns] = tmp / filterSize; 
 			}
 		}
+		return output;
 	}
 	
 	// -------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------- Swap and Solver part-------------------------------------------------
 	// -------------------------------------------------------------------------------------------------------------
 	
-	private void checkRandomSwaps(int radius, Grid<T> imageGrid, float[][] som) {
+	private void checkRandomSwaps(int radius, Grid<T> imageGrid, float[][] map) {
 		final int columns = imageGrid.getColumns();
 		final int rows = imageGrid.getRows();
 		
@@ -304,7 +326,6 @@ public class FLAS<T extends Describable> extends LAS<T> {
 				swapAreaHeight = Math.min(swapAreaHeight+1, rows);
 		}	
 				
-
 		// get all positions of the actual swap region
 		final int[] swapIndices = new int[swapAreaWidth*swapAreaHeight];
 		for (int i = 0, y = 0; y < swapAreaHeight; y++)
@@ -317,12 +338,12 @@ public class FLAS<T extends Describable> extends LAS<T> {
 		if(doWrap) {
 			for (int n = 0; n < numSwapTries; n++) {			
 				final int numSwapPositions = findSwapPositionsWrap(swapIndices, swapPositions, swapAreaWidth, swapAreaHeight, rows, columns); 
-				doSwaps(swapPositions, numSwapPositions, imageGrid, som);
+				doSwaps(swapPositions, numSwapPositions, imageGrid, map);
 			}	
 		} else {
 			for (int n = 0; n < numSwapTries; n++) {			
 				final int numSwapPositions = findSwapPositions(swapIndices, swapPositions, swapAreaWidth, swapAreaHeight, rows, columns); 
-				doSwaps(swapPositions, numSwapPositions, imageGrid, som);
+				doSwaps(swapPositions, numSwapPositions, imageGrid, map);
 			}	
 		}
 	}
@@ -390,7 +411,7 @@ public class FLAS<T extends Describable> extends LAS<T> {
 		return numSwapPositions;
 	}	
 
-	private void doSwaps(int[] swapPositions, int numSwapPositions, Grid<T> imageGrid, float[][] som) { 
+	private void doSwaps(int[] swapPositions, int numSwapPositions, Grid<T> imageGrid, float[][] map) { 
 		
 		int numValid = 0;
 		for (int i = 0; i < numSwapPositions; i++) {
@@ -403,13 +424,13 @@ public class FLAS<T extends Describable> extends LAS<T> {
 				numValid++;
 			}
 			else 
-				fvs[i] = som[swapPosition]; // hole
+				fvs[i] = map[swapPosition]; // hole
 			
-			somFvs[i] = som[swapPosition];
+			mapFvs[i] = map[swapPosition];
 		}
 					
 		if (numValid > 0) {
-			int[][] distLut = calcDistLutL2Int(fvs, somFvs, numSwapPositions);
+			int[][] distLut = calcDistLutL2Int(fvs, mapFvs, numSwapPositions);
 			int[] permutation = JonkerVolgenantGo.computeAssignment(distLut, numSwapPositions);	
 
 			for (int i = 0; i < numSwapPositions; i++) 
