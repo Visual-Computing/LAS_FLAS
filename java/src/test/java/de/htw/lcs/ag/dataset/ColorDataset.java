@@ -26,6 +26,13 @@ public class ColorDataset implements Dataset<ColorDataset.ColorData> {
 	public ColorData[] getAll() {
 		return colors.clone();
 	}
+
+	@Override
+	public DistanceFunction<float[]> getFeatureDistanceFunction() {
+		return (float[] element1, float[] element2) -> {
+			return DistanceFunction.getSSEDistance(element1, element2);
+		};
+	}
 	
 	@Override
 	public BufferedImage visualise(Grid<ColorData> imageGrid) {
@@ -49,13 +56,6 @@ public class ColorDataset implements Dataset<ColorDataset.ColorData> {
 		BufferedImage image = new BufferedImage(mapWidth, mapHeight, BufferedImage.TYPE_INT_ARGB);
 		image.setRGB(0, 0, mapWidth, mapHeight, pixels, 0, mapWidth);
 		return image;
-	}
-
-	@Override
-	public DistanceFunction<float[]> getFeatureDistanceFunction() {
-		return (float[] element1, float[] element2) -> {
-			return DistanceFunction.getSSEDistance(element1, element2);
-		};
 	}
 		
 	/**
