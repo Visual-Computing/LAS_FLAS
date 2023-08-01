@@ -1,7 +1,9 @@
 package de.htw.lcs.ag.dataset;
 
 import java.awt.Color;
+import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.awt.image.ConvolveOp;
 import java.awt.image.Kernel;
@@ -148,6 +150,10 @@ public class ImageDataset implements Dataset<ImageDataset.ImageData> {
 	// --------------------------------------------------------------------------------------
 	
 	public static ImageDataset loadDataset(Path imageDir) throws IOException {	
+		return loadDataset(imageDir, 4);
+	}
+	
+	public static ImageDataset loadDataset(Path imageDir, int meanColorThumbSize) throws IOException {	
 		final List<ImageData> images = new ArrayList<>();
 		
 		final Path vectorDir = imageDir.resolve("vectors");
@@ -160,7 +166,7 @@ public class ImageDataset implements Dataset<ImageDataset.ImageData> {
 		    		 try {
 						final BufferedImage image = ImageIO.read(imageFile.toFile());
 						final String filename = imageFile.getFileName().toString();				
-						final float[] feature = useVectorDir ? loadPaperVectors(vectorDir, filename) : extractMeanColor(image);
+						final float[] feature = useVectorDir ? loadPaperVectors(vectorDir, filename) : extractMeanColor(image, meanColorThumbSize);
 						images.add(new ImageData(images.size(), image, feature, imageFile.getFileName().toString()));
 					} catch (IOException e) {
 						e.printStackTrace();
@@ -198,27 +204,51 @@ public class ImageDataset implements Dataset<ImageDataset.ImageData> {
 	 * @param image
 	 * @return
 	 */
-	protected static float[] extractMeanColor(BufferedImage image) {
+	protected static float[] extractMeanColor(BufferedImage bi, int thumbnailSize) {
+		final Image scaledImage = bi.getScaledInstance(thumbnailSize, thumbnailSize, Image.SCALE_AREA_AVERAGING);
+		
+		// Convert Image to BufferedImage
+        BufferedImage image = toBufferedImage(scaledImage);
+
+        // read the pixels
 		int width  = image.getWidth();
 		int height = image.getHeight();
 		int[] rgbArray = new int[width*height]; 
 		image.getRGB(0, 0, width, height, rgbArray, 0, width); 
-
-		float r = 0, g = 0, b = 0;
-		for(int y=0; y < height; y++) {
-			for (int x=0 ; x<width ; x++) {
-				int c = rgbArray[y*width+x]; 
-				r += (c>>16)&255;
-				g += (c>> 8)&255;
-				b += (c    )&255;
-			}
-		}
 		
-		// average color
-		r /= width * height;
-		g /= width * height;
-		b /= width * height;
+		// convert to float array of all pixels and their RGB channels
+		float[] feature = new float[rgbArray.length*3]; 
+		for (int i = 0; i < rgbArray.length; i++) {
+			int rgb = rgbArray[i];
+			feature[i*3+0] = (rgb>>16)&255;
+			feature[i*3+1] = (rgb>> 8)&255;
+			feature[i*3+2] = (rgb    )&255;
+		}
 
-		return new float[] {r, g, b};
+		return feature;
 	}
+	
+	/**
+	 * Helper method to convert Image to BufferedImage
+	 * 
+	 * @param image
+	 * @return
+	 */
+    private static BufferedImage toBufferedImage(Image image) {
+        if (image instanceof BufferedImage) {
+            return (BufferedImage) image;
+        }
+
+        BufferedImage bufferedImage = new BufferedImage(
+            image.getWidth(null),
+            image.getHeight(null),
+            BufferedImage.TYPE_INT_ARGB
+        );
+
+        Graphics g = bufferedImage.getGraphics();
+        g.drawImage(image, 0, 0, null);
+        g.dispose();
+
+        return bufferedImage;
+    }
 }
