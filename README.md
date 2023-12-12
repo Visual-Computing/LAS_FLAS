@@ -52,9 +52,9 @@ Fast Linear Assignments Sorting (FLAS) is able to handle larger quantities of ve
 
 We provide a Jupyter notebook with full python code for both sorting algorithms and the quality measure DPQ:
 
-[DPQ_LAS&FLAS](LAS_FLAS_DPQ_colors.ipynb)
+[DPQ_LAS&FLAS](python/LAS_FLAS_DPQ_colors.ipynb)
 
-Please install the python packages listed in [requirements.txt](requirements.txt) before executing the notebook on your local machine
+Please install the python packages listed in [python/requirements.txt](python/requirements.txt) before executing the notebook on your local machine
 
 ```bash
 pip install -r requirements.txt

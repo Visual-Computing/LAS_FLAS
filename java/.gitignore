@@ -1,0 +1,33 @@
+# Ignore gradle files
+/.gradle/
+gradle.properties
+
+# generated files
+/bin/
+/logs/
+/gen/
+/build/
+/buildSrc/build/
+/buildSrc/.gradle/
+~*
+
+# images
+/images/
+
+# Windows thumbnail db
+Thumbs.db
+
+# OSX files
+.DS_Store
+
+# Eclipse project files
+/.metadata/
+/.settings/
+.classpath
+.project
+
+# IntelliJ IDEA files
+.idea
+*.iml
+*.iws
+*.ipr
