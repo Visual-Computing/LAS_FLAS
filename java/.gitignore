@@ -9,7 +9,6 @@ gradle.properties
 /build/
 /buildSrc/build/
 /buildSrc/.gradle/
-octave-workspace
 ~*
 
 # images
@@ -32,8 +31,3 @@ Thumbs.db
 *.iml
 *.iws
 *.ipr
-
-# Ignore sensitive data
-*pixolution*.jar
-
-octave/IsoMatch/octave-workspace
