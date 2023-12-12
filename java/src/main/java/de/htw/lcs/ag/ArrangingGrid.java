@@ -1,7 +1,5 @@
 package de.htw.lcs.ag;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Random;
 
 @FunctionalInterface
@@ -20,7 +18,7 @@ public interface ArrangingGrid<T> {
 
 			@Override
 			public Grid<T> doSorting(Grid<T> imageGrid) {
-				Collections.shuffle(Arrays.asList(imageGrid.getElements()), rndShuffle);
+				imageGrid.shuffle(rndShuffle);
 	    		return imageGrid;
 			}
 			

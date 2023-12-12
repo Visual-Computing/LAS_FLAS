@@ -1,6 +1,13 @@
 package de.htw.lcs.ag;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Random;
+
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntList;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectList;
 
 public class Grid<T> {
 
@@ -77,5 +84,29 @@ public class Grid<T> {
 
 	public boolean[] getFixedElements() {
 		return fixedElements;
+	}
+	
+	/**
+	 * Shuffle all swappable elements in the grid
+	 * 
+	 * @param rnd
+	 */
+	public void shuffle(Random rnd) {
+		
+		// find swappable positions (not fixed and not a hole)
+		final IntList swappablePos = new IntArrayList(elements.length);
+		final ObjectList<T> swappableElement = new ObjectArrayList<>(elements.length);
+		for (int i = 0; i < elements.length; i++) {
+			if(elements[i] != null && (fixedElements != null && fixedElements[i] == false)) {
+				swappablePos.add(i);
+			}
+		}
+		
+		// copy the position and shuffle the new list
+		Collections.shuffle(swappablePos, rnd);
+		
+		// swap the positions of the swappable elements
+		for (int i = 0; i < swappablePos.size(); i++) 
+			elements[swappablePos.getInt(i)] = swappableElement.get(i);		
 	}
 }
