@@ -6,6 +6,7 @@
 #include "fast_linear_assignment_sorter.hpp"
 #include "map_place.hpp"
 
+#include <iostream>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -16,7 +17,7 @@ void arrange_with_holes(const float *features, const int dim, const GridMap *map
   // copy the data
   MapPlace *map_places = (MapPlace *) malloc(rows * columns * sizeof(MapPlace));
   if (map_places == NULL) {
-    fprintf(stderr, "Failed to allocate map_places.\n");
+    std::cerr << "Failed to allocate map_places.\n" << std::endl;
     exit(1);
   }
   for (int y = 0; y < rows; y++) {

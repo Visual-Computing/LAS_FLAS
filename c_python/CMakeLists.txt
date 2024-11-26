@@ -1,21 +1,42 @@
-# python-bindings/CMakeLists.txt
 cmake_minimum_required(VERSION 3.19)
-project(flas_c_py)
 
-# Add python executable
-if(DEFINED PYTHON_EXECUTABLE)
-    set(Python_EXECUTABLE ${PYTHON_EXECUTABLE})
-endif()
-find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
+cmake_policy(SET CMP0054 NEW)
+cmake_policy(SET CMP0148 NEW)
 
-# Add pybind11
+# Project name and language
+project(flas_c_py LANGUAGES CXX)
+
+# Include pybind11
 find_package(pybind11 CONFIG REQUIRED)
 
-# Specify the include directories
-include_directories(${CMAKE_SOURCE_DIR}/clib/src)
+# Add library sources
+set(LIBRARY_SOURCES
+	ext/det_random.cpp
+	ext/det_random.hpp
+	ext/fast_linear_assignment_sorter.cpp
+	ext/fast_linear_assignment_sorter.hpp
+	ext/feature_data.cpp
+	ext/feature_data.hpp
+	ext/flas_adapter.cpp
+	ext/flas_adapter.hpp
+	ext/grid_map.cpp
+	ext/grid_map.hpp
+	ext/junker_volgenant_solver.cpp
+	ext/junker_volgenant_solver.hpp
+	ext/map_place.cpp
+	ext/map_place.hpp
+)
 
-# Add cpp-flas
-add_subdirectory(${CMAKE_SOURCE_DIR}/clib/)
-pybind11_add_module(flas_c_py clib/src/flas_c.cpp)
+# Create the library (STATIC or SHARED, depending on needs)
+add_library(flas_c SHARED ${LIBRARY_SOURCES})
 
-target_link_libraries(flas_c_py PRIVATE compile-options)
+# Include directories for the library
+target_include_directories(flas_c PUBLIC
+    ${CMAKE_SOURCE_DIR}/ext
+)
+
+# Add Python bindings
+pybind11_add_module(flas_c_py src/flas_c.cpp)
+
+# Link the C++ library to the Python module
+target_link_libraries(flas_c_py PRIVATE flas_c)
