@@ -1,23 +1,50 @@
 #include <iostream>
 #include <pybind11/pybind11.h>
+#include <pybind11/numpy.h>
 
 #include "flas_adapter.hpp"
 #include "grid_map.hpp"
 
 namespace py = pybind11;
 
-bool say_hello() {
-  std::cout << "hello world" << std::endl;
-  return false;
-}
+std::tuple<int, py::array_t<uint32_t>> flas(const py::array_t<float, py::array::c_style>& features, const py::array_t<bool, py::array::c_style>& in_use, bool wrap) {
 
-void arrange_with_holes_impl(const float *features, const int dim, const GridMap *map, const bool *in_use, bool do_wrap) {
-  arrange_with_holes(features, dim, map, in_use, do_wrap);
+  const py::buffer_info features_info = features.request();
+  const ssize_t height = features_info.shape[0];
+  const ssize_t width = features_info.shape[1];
+  const ssize_t dim = features_info.shape[2];
+
+  const py::array_t<uint32_t> result_indices({height, width});
+  const py::buffer_info result_indices_info = result_indices.request();
+
+  if (features_info.ndim != 3)
+    return std::make_tuple(1, result_indices);
+
+  const py::buffer_info in_use_info = in_use.request();
+  if (in_use_info.ndim != 2)
+    return std::make_tuple(2, result_indices);
+
+  GridMap grid_map = init_grid_map(static_cast<int>(height), static_cast<int>(width));
+
+  arrange_with_holes(
+    static_cast<const float *>(features_info.ptr),
+    static_cast<int>(dim),
+    &grid_map,
+    static_cast<const bool *>(in_use_info.ptr),
+    wrap
+  );
+
+  uint32_t* res_ptr = static_cast<uint32_t*>(result_indices_info.ptr);
+
+  for (int y = 0; y < height; y++) {
+    for (int x = 0; x < width; x++) {
+      res_ptr[y * width + x] = get(&grid_map, x, y);
+    }
+  }
+
+  return std::make_tuple(0, result_indices);
 }
 
 PYBIND11_MODULE(flas_c_py, m) {
-  m.def("say_hello", &say_hello);
-  m.def("arrange_with_holes", &arrange_with_holes_impl);
-
-  py::class_<GridMap>(m, "GridMap");
+  m.def("flas", &flas);
 }

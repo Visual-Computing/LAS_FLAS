@@ -3,9 +3,10 @@ data/
 
 python/.ipynb_checkpoints/
 
-/c_python/clib/build
+/c_python/build
+/c_python/clib
 /c_python/clib/.idea
+/c_python/images
 cmake-build-debug-coverage
 cmake-build-debug
-/c_python/build
 
