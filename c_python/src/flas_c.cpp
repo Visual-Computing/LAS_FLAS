@@ -47,6 +47,4 @@ std::tuple<int, py::array_t<uint32_t>> flas(const py::array_t<float, py::array::
 
 PYBIND11_MODULE(flas_c_py, m) {
   m.def("flas", &flas);
-
-  py::class_<GridMap>(m, "GridMap");
 }
