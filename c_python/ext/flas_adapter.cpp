@@ -7,16 +7,14 @@
 #include "map_place.hpp"
 
 #include <iostream>
-#include <stdlib.h>
-#include <stdio.h>
 
-void arrange_with_holes(const float *features, const int dim, const GridMap *map, const bool *in_use, bool do_wrap) {
+void arrange_with_holes(const float *features, const int dim, const GridMap *map, const bool *in_use, const FlasSettings* settings) {
   int rows = map->rows;
   int columns = map->columns;
 
   // copy the data
-  MapPlace *map_places = (MapPlace *) malloc(rows * columns * sizeof(MapPlace));
-  if (map_places == NULL) {
+  auto map_places = static_cast<MapPlace *>(malloc(rows * columns * sizeof(MapPlace)));
+  if (map_places == nullptr) {
     std::cerr << "Failed to allocate map_places.\n" << std::endl;
     exit(1);
   }
@@ -33,12 +31,8 @@ void arrange_with_holes(const float *features, const int dim, const GridMap *map
     }
   }
 
-  // create sorting settings
-  FlasSettings settings = default_settings();
-  settings.do_wrap = do_wrap;
-
   // Sort the map
-  do_sorting_full(map_places, dim, columns, rows, &settings);
+  do_sorting_full(map_places, dim, columns, rows, settings);
 
   // apply the new order to the map
   for (int y = 0; y < rows; y++) {

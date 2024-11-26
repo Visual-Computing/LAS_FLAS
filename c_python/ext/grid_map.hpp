@@ -5,8 +5,6 @@
 #ifndef GRID_MAP_H
 #define GRID_MAP_H
 
-#include <stdbool.h>
-
 typedef struct {
   int rows;
   int columns;
