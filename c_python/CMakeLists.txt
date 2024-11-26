@@ -29,6 +29,7 @@ set(LIBRARY_SOURCES
 
 # Create the library (STATIC or SHARED, depending on needs)
 add_library(flas_c SHARED ${LIBRARY_SOURCES})
+set_target_properties(flas_c PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # Include directories for the library
 target_include_directories(flas_c PUBLIC

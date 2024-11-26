@@ -6,6 +6,6 @@
 #ifndef JUNKER_VOLGENANT_SOLVER_H
 #define JUNKER_VOLGENANT_SOLVER_H
 
-int *compute_assignment(int *matrix, int dim);
+int *compute_assignment(const int *matrix, int dim);
 
 #endif //JUNKER_VOLGENANT_SOLVER_H

@@ -9,9 +9,9 @@ typedef struct {
   unsigned int seed;
 } RandomGenerator;
 
-RandomGenerator *get_instance(const unsigned int seed);
-unsigned int det_rand(void);
+RandomGenerator *get_instance(unsigned int seed);
+unsigned int det_rand();
 unsigned int det_next_int(unsigned int bound);
-float det_next_float(void);
+float det_next_float();
 
 #endif //DET_RANDOM_H

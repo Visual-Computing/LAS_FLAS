@@ -12,6 +12,6 @@ void init_map_place(MapPlace *map_place, const int id, const float *const featur
 
 void init_invalid_map_place(MapPlace *map_place) {
   map_place->id = -1;
-  map_place->feature = 0;
+  map_place->feature = nullptr;
   map_place->is_swappable = false;
 }

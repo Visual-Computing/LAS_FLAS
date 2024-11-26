@@ -6,10 +6,9 @@
 #ifndef FLAS_ADAPTER_H
 #define FLAS_ADAPTER_H
 
-#include <stdbool.h>
-
+#include "fast_linear_assignment_sorter.hpp"
 #include "grid_map.hpp"
 
-void arrange_with_holes(const float *features, const int dim, const GridMap *map, const bool *in_use, bool do_wrap);
+void arrange_with_holes(const float *features, int dim, const GridMap *map, const bool *in_use, const FlasSettings* settings);
 
 #endif //FLAS_ADAPTER_H

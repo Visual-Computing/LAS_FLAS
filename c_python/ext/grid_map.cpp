@@ -6,16 +6,15 @@
 #include "grid_map.hpp"
 
 #include <iostream>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 
 // #include "det_random.h"
 
 // Function to create an empty grid filled with -1 values
 int *empty_grid(int rows, int columns) {
-  int *cells = (int *) malloc(rows * columns * sizeof(int));
-  if (cells == NULL) {
+  int *cells = static_cast<int *>(malloc(rows * columns * sizeof(int)));
+  if (cells == nullptr) {
     std::cerr << "Memory allocation failed\n" << std::endl;
     exit(1);
   }
@@ -106,15 +105,15 @@ void clear(const GridMap *grid) {
 
 // Function to create a copy of the grid
 GridMap *copy(const GridMap *grid) {
-  GridMap *new_grid = (GridMap *) malloc(sizeof(GridMap));
-  if (new_grid == NULL) {
+  auto new_grid = static_cast<GridMap *>(malloc(sizeof(GridMap)));
+  if (new_grid == nullptr) {
     std::cerr << "Failed to allocate new_grid.\n" << std::endl;
     exit(1);
   }
   new_grid->rows = grid->rows;
   new_grid->columns = grid->columns;
-  new_grid->cells = (int *) malloc(size(grid) * sizeof(int));
-  if (new_grid->cells == NULL) {
+  new_grid->cells = static_cast<int *>(malloc(size(grid) * sizeof(int)));
+  if (new_grid->cells == nullptr) {
     std::cerr << "Failed to allocate grid cells.\n" << std::endl;
     exit(1);
   }
