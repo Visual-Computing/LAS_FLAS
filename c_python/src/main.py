@@ -12,7 +12,8 @@ def main():
     features = np.random.random((height, width, dim)).astype(np.float32)
     # print(features)
     in_use = np.zeros((height, width)).astype(np.bool)
-    # print(in_use)
+    in_use[:10, :10] = True
+    print(in_use)
 
     success, result = flas_c_py.flas(features, in_use, True, 0.5, 0.93, 1, 1.0, 1.0, 100.0, 0.01, 1.0, 9)
     # print(result)
