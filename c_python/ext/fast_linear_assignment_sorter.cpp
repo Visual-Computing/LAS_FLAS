@@ -2,10 +2,10 @@
 // Created by Bruno Schilling on 10/28/24.
 // Ported from https://github.com/Visual-Computing/DynamicExplorationGraph/tree/cb7243f7296ef4513b8a5177773a7f30826c5f7b/java/deg-visualization/src/main/java/com/vc/deg/viz/om
 //
-#include <stdbool.h>
+#include <iostream>
 
-#include "fast_linear_assignment_sorter.h"
-#include "junker_volgenant_solver.h"
+#include "fast_linear_assignment_sorter.hpp"
+#include "junker_volgenant_solver.hpp"
 
 #include <math.h>
 #include <stdlib.h>
@@ -107,54 +107,54 @@ InternalData create_internal_data(MapPlace *map_places, int columns, int rows, i
 
   data.map_places = map_places;
 
-  data.som = calloc(data.grid_size * dim, sizeof(float));
+  data.som = static_cast<float *>(calloc(data.grid_size * dim, sizeof(float)));
   if (data.som == NULL) {
-    fprintf(stderr, "Failed to allocate som.\n");
+    std::cerr << "Failed to allocate som.\n" << std::endl;
     exit(1);
   }
 
-  data.weights = malloc(data.grid_size * sizeof(float));
+  data.weights = static_cast<float *>(malloc(data.grid_size * sizeof(float)));
   if (data.weights == NULL) {
-    fprintf(stderr, "Failed to allocate weights.\n");
+    std::cerr << "Failed to allocate weights.\n" << std::endl;
     exit(1);
   }
 
   data.num_swap_positions = min(max_swap_positions, data.grid_size);
 
-  data.swap_positions = malloc(data.num_swap_positions * sizeof(int));
+  data.swap_positions = static_cast<int *>(malloc(data.num_swap_positions * sizeof(int)));
   if (data.swap_positions == NULL) {
-    fprintf(stderr, "Failed to allocate swap_positions.\n");
+    std::cerr << "Failed to allocate swap_positions.\n" << std::endl;
     exit(1);
   }
 
-  data.fvs = malloc(data.num_swap_positions * sizeof(float *));
+  data.fvs = static_cast<const float **>(malloc(data.num_swap_positions * sizeof(float *)));
   if (data.fvs == NULL) {
-    fprintf(stderr, "Failed to allocate fvs.\n");
+    std::cerr << "Failed to allocate fvs.\n" << std::endl;
     exit(1);
   }
 
-  data.som_fvs = malloc(data.num_swap_positions * sizeof(float *));
+  data.som_fvs = static_cast<const float **>(malloc(data.num_swap_positions * sizeof(float *)));
   if (data.som_fvs == NULL) {
-    fprintf(stderr, "Failed to allocate som_fvs.\n");
+    std::cerr << "Failed to allocate som_fvs.\n" << std::endl;
     exit(1);
   }
 
-  data.swapped_elements = malloc(data.num_swap_positions * sizeof(MapPlace));
+  data.swapped_elements = static_cast<MapPlace *>(malloc(data.num_swap_positions * sizeof(MapPlace)));
   if (data.swapped_elements == NULL) {
-    fprintf(stderr, "Failed to allocate swapped_elements.\n");
+    std::cerr << "Failed to allocate swapped_elements.\n" << std::endl;
     exit(1);
   }
   memcpy(data.swapped_elements, data.map_places, data.num_swap_positions * sizeof(MapPlace));
 
-  data.dist_lut = malloc(data.num_swap_positions * data.num_swap_positions * sizeof(int));
+  data.dist_lut = static_cast<int *>(malloc(data.num_swap_positions * data.num_swap_positions * sizeof(int)));
   if (data.dist_lut == NULL) {
-    fprintf(stderr, "Failed to allocate dist_lut.\n");
+    std::cerr << "Failed to allocate dist_lut.\n" << std::endl;
     exit(1);
   }
 
-  data.dist_lut_f = malloc(data.num_swap_positions * data.num_swap_positions * sizeof(float));
+  data.dist_lut_f = static_cast<float *>(malloc(data.num_swap_positions * data.num_swap_positions * sizeof(float)));
   if (data.dist_lut_f == NULL) {
-    fprintf(stderr, "Failed to allocate dist_lut_f.\n");
+    std::cerr << "Failed to allocate dist_lut_f.\n" << std::endl;
     exit(1);
   }
   return data;
@@ -267,14 +267,14 @@ void filter_weighted_som(
   int filter_size_x = 2 * act_radius_x + 1;
   int filter_size_y = 2 * act_radius_y + 1;
 
-  float *som_h = malloc(data->grid_size * data->dim * sizeof(float));
+  float *som_h = static_cast<float *>(malloc(data->grid_size * data->dim * sizeof(float)));
   if (som_h == NULL) {
-    fprintf(stderr, "Failed to allocate som_h.\n");
+    std::cerr << "Failed to allocate som_h.\n" << std::endl;
     exit(1);
   }
-  float *weights_h = malloc(data->grid_size * sizeof(float));
+  float *weights_h = static_cast<float *>(malloc(data->grid_size * sizeof(float)));
   if (weights_h == NULL) {
-    fprintf(stderr, "Failed to allocate weights_h.\n");
+    std::cerr << "Failed to allocate weights_h.\n" << std::endl;
     exit(1);
   }
 
@@ -433,9 +433,9 @@ void check_random_swaps(const InternalData *data, int radius, float sample_facto
 
   // get all positions of the actual swap region
   const int num_swap_indices = swap_area_width * swap_area_height;
-  int *swap_indices = malloc(num_swap_indices * sizeof(int));
+  int *swap_indices = static_cast<int *>(malloc(num_swap_indices * sizeof(int)));
   if (swap_indices == NULL) {
-    fprintf(stderr, "Failed to allocate swap_indices.\n");
+    std::cerr << "Failed to allocate swap_indices.\n" << std::endl;
     exit(1);
   }
 
@@ -469,13 +469,13 @@ void filter_h_wrap(float *input, float *output, int rows, int columns, int dims,
   // Allocate memory for the extended row
   float **row_ext = (float **) malloc((columns + 2 * ext) * sizeof(float *));
   if (row_ext == NULL) {
-    fprintf(stderr, "Failed to allocate row_ext.\n");
+    std::cerr << "Failed to allocate row_ext.\n" << std::endl;
     exit(1);
   }
 
   float *tmp = (float *) malloc(dims * sizeof(float));
   if (tmp == NULL) {
-    fprintf(stderr, "Failed to allocate tmp.\n");
+    std::cerr << "Failed to allocate tmp.\n" << std::endl;
     exit(1);
   }
 
@@ -529,7 +529,7 @@ void filter_h_wrap_1d(const float *input, float *output, int rows, int columns, 
   // Allocate memory for the extended row
   float *row_ext = (float *) malloc((columns + 2 * ext) * sizeof(float));
   if (row_ext == NULL) {
-    fprintf(stderr, "Failed to allocate row_ext.\n");
+    std::cerr << "Failed to allocate row_ext.\n" << std::endl;
     exit(1);
   }
 
@@ -578,12 +578,12 @@ void filter_v_wrap(float *input, float *output, int rows, int columns, int dims,
   // Allocate memory for the extended column
   float **col_ext = (float **) malloc((rows + 2 * ext) * sizeof(float *));
   if (col_ext == NULL) {
-    fprintf(stderr, "Failed to allocate col_ext.\n");
+    std::cerr << "Failed to allocate col_ext.\n" << std::endl;
     exit(1);
   }
   float *tmp = (float *) malloc(dims * sizeof(float));
   if (tmp == NULL) {
-    fprintf(stderr, "Failed to allocate tmp.\n");
+    std::cerr << "Failed to allocate tmp.\n" << std::endl;
     exit(1);
   }
 
@@ -635,7 +635,7 @@ void filter_v_wrap_1d(const float *input, float *output, int rows, int columns, 
   // Allocate memory for the extended column
   float *col_ext = (float *) malloc((rows + 2 * ext) * sizeof(float));
   if (col_ext == NULL) {
-    fprintf(stderr, "Failed to allocate col_ext.\n");
+    std::cerr << "Failed to allocate col_ext.\n" << std::endl;
     exit(1);
   }
 
@@ -682,13 +682,13 @@ void filter_h_mirror(float *input, float *output, int rows, int columns, int dim
   // Allocate memory for the extended row
   float **row_ext = (float **) malloc((columns + 2 * ext) * sizeof(float *));
   if (row_ext == NULL) {
-    fprintf(stderr, "Failed to allocate row_ext.\n");
+    std::cerr << "Failed to allocate row_ext.\n" << std::endl;
     exit(1);
   }
   // Allocate temporary storage for filter accumulation
   float *tmp = (float *) malloc(dims * sizeof(float));
   if (tmp == NULL) {
-    fprintf(stderr, "Failed to allocate tmp.\n");
+    std::cerr << "Failed to allocate tmp.\n" << std::endl;
     exit(1);
   }
 
@@ -742,7 +742,7 @@ void filter_h_mirror_1d(const float *input, float *output, int rows, int columns
   // Allocate memory for the extended row
   float *row_ext = (float *) malloc((columns + 2 * ext) * sizeof(float));
   if (row_ext == NULL) {
-    fprintf(stderr, "Failed to allocate row_ext.\n");
+    std::cerr << "Failed to allocate row_ext.\n" << std::endl;
     exit(1);
   }
 
@@ -791,13 +791,13 @@ void filter_v_mirror(float *input, float *output, int rows, int columns, int dim
   // Allocate memory for the extended column
   float **col_ext = (float **) malloc((rows + 2 * ext) * sizeof(float *));
   if (col_ext == NULL) {
-    fprintf(stderr, "Failed to allocate col_ext.\n");
+    std::cerr << "Failed to allocate col_ext.\n" << std::endl;
     exit(1);
   }
   // Allocate temporary storage for filter accumulation
   float *tmp = (float *) malloc(dims * sizeof(float));
   if (tmp == NULL) {
-    fprintf(stderr, "Failed to allocate tmp.\n");
+    std::cerr << "Failed to allocate tmp.\n" << std::endl;
     exit(1);
   }
 
@@ -849,7 +849,7 @@ void filter_v_mirror_1d(const float *input, float *output, int rows, int columns
   // Allocate memory for the extended column
   float *col_ext = (float *) malloc((rows + 2 * ext) * sizeof(float));
   if (col_ext == NULL) {
-    fprintf(stderr, "Failed to allocate col_ext.\n");
+    std::cerr << "Failed to allocate col_ext.\n" << std::endl;
     exit(1);
   }
 

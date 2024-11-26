@@ -1,31 +1,42 @@
-cmake_minimum_required(VERSION 3.29)
-project(FLAS_C C)
+cmake_minimum_required(VERSION 3.19)
 
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_BUILD_TYPE Debug)
+cmake_policy(SET CMP0054 NEW)
+cmake_policy(SET CMP0148 NEW)
 
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(GTK REQUIRED gtk+-2.0)
+# Project name and language
+project(flas_c_py LANGUAGES CXX)
 
-include_directories(${GTK_INCLUDE_DIRS})
-link_directories(${GTK_LIBRARY_DIRS})
+# Include pybind11
+find_package(pybind11 CONFIG REQUIRED)
 
-add_executable(FLAS_C
-    src/main.c
-        src/feature_data.c
-        src/feature_data.h
-        src/flas_adapter.h
-        src/grid_map.c
-        src/grid_map.h
-        src/flas_adapter.c
-        src/fast_linear_assignment_sorter.h
-        src/fast_linear_assignment_sorter.c
-        src/map_place.h
-        src/map_place.c
-        src/junker_volgenant_solver.h
-        src/junker_volgenant_solver.c
-        src/det_random.c
-        src/det_random.h)
+# Add library sources
+set(LIBRARY_SOURCES
+	ext/det_random.cpp
+	ext/det_random.hpp
+	ext/fast_linear_assignment_sorter.cpp
+	ext/fast_linear_assignment_sorter.hpp
+	ext/feature_data.cpp
+	ext/feature_data.hpp
+	ext/flas_adapter.cpp
+	ext/flas_adapter.hpp
+	ext/grid_map.cpp
+	ext/grid_map.hpp
+	ext/junker_volgenant_solver.cpp
+	ext/junker_volgenant_solver.hpp
+	ext/map_place.cpp
+	ext/map_place.hpp
+)
 
-target_link_libraries(FLAS_C ${GTK_LIBRARIES})
-target_link_libraries(FLAS_C m)
+# Create the library (STATIC or SHARED, depending on needs)
+add_library(flas_c SHARED ${LIBRARY_SOURCES})
+
+# Include directories for the library
+target_include_directories(flas_c PUBLIC
+    ${CMAKE_SOURCE_DIR}/ext
+)
+
+# Add Python bindings
+pybind11_add_module(flas_c_py src/flas_c.cpp)
+
+# Link the C++ library to the Python module
+target_link_libraries(flas_c_py PRIVATE flas_c)

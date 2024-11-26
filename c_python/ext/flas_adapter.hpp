@@ -8,7 +8,7 @@
 
 #include <stdbool.h>
 
-#include "grid_map.h"
+#include "grid_map.hpp"
 
 void arrange_with_holes(const float *features, const int dim, const GridMap *map, const bool *in_use, bool do_wrap);
 

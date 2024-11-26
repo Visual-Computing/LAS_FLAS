@@ -2,10 +2,11 @@
 // Created by Bruno Schilling on 10/24/24.
 // Ported from https://github.com/Visual-Computing/DynamicExplorationGraph/tree/cb7243f7296ef4513b8a5177773a7f30826c5f7b/java/deg-visualization/src/main/java/com/vc/deg/viz/om
 //
-#include "flas_adapter.h"
-#include "fast_linear_assignment_sorter.h"
-#include "map_place.h"
+#include "flas_adapter.hpp"
+#include "fast_linear_assignment_sorter.hpp"
+#include "map_place.hpp"
 
+#include <iostream>
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -16,7 +17,7 @@ void arrange_with_holes(const float *features, const int dim, const GridMap *map
   // copy the data
   MapPlace *map_places = (MapPlace *) malloc(rows * columns * sizeof(MapPlace));
   if (map_places == NULL) {
-    fprintf(stderr, "Failed to allocate map_places.\n");
+    std::cerr << "Failed to allocate map_places.\n" << std::endl;
     exit(1);
   }
   for (int y = 0; y < rows; y++) {

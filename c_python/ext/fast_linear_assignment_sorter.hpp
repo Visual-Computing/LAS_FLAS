@@ -6,8 +6,8 @@
 #ifndef FAST_LINEAR_ASSIGNMENT_SORTER_H
 #define FAST_LINEAR_ASSIGNMENT_SORTER_H
 
-#include "flas_adapter.h"
-#include "map_place.h"
+#include "flas_adapter.hpp"
+#include "map_place.hpp"
 
 typedef struct {
   bool do_wrap;

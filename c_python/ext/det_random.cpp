@@ -2,7 +2,7 @@
 // Created by Bruno Schilling on 10/31/24.
 //
 
-#include "det_random.h"
+#include "det_random.hpp"
 
 RandomGenerator *get_instance(const unsigned int seed) {
   static RandomGenerator instance;

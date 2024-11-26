@@ -3,6 +3,7 @@
 // Ported from https://github.com/Visual-Computing/DynamicExplorationGraph/tree/cb7243f7296ef4513b8a5177773a7f30826c5f7b/java/deg-visualization/src/main/java/com/vc/deg/viz/om
 //
 
+#include <iostream>
 #include <stdlib.h>
 #include <limits.h>
 #include <stdio.h>
@@ -14,49 +15,49 @@ int *compute_assignment(int *matrix, int dim) {
 
   int *in_row = (int *) calloc(dim, sizeof(int));
   if (in_row == NULL) {
-    fprintf(stderr, "Failed to allocate inRow.\n");
+    std::cerr << "Failed to allocate inRow.\n" << std::endl;
     exit(1);
   }
 
   int *in_col = (int *) calloc(dim, sizeof(int));
   if (in_col == NULL) {
-    fprintf(stderr, "Failed to allocate inCol.\n");
+    std::cerr << "Failed to allocate inCol.\n" << std::endl;
     exit(1);
   }
 
   int *v = (int *) calloc(dim, sizeof(int));
   if (v == NULL) {
-    fprintf(stderr, "Failed to allocate v.\n");
+    std::cerr << "Failed to allocate v.\n" << std::endl;
     exit(1);
   }
 
   int *free_ = (int *) calloc(dim, sizeof(int));
   if (free_ == NULL) {
-    fprintf(stderr, "Failed to allocate free_.\n");
+    std::cerr << "Failed to allocate free_.\n" << std::endl;
     exit(1);
   }
 
   int *collist = (int *) calloc(dim, sizeof(int));
   if (collist == NULL) {
-    fprintf(stderr, "Failed to allocate collist.\n");
+    std::cerr << "Failed to allocate collist.\n" << std::endl;
     exit(1);
   }
 
   int *matches = (int *) calloc(dim, sizeof(int));
   if (matches == NULL) {
-    fprintf(stderr, "Failed to allocate matches.\n");
+    std::cerr << "Failed to allocate matches.\n" << std::endl;
     exit(1);
   }
 
   int *pred = (int *) calloc(dim, sizeof(int));
   if (pred == NULL) {
-    fprintf(stderr, "Failed to allocate pred.\n");
+    std::cerr << "Failed to allocate pred.\n" << std::endl;
     exit(1);
   }
 
   int *d = (int *) calloc(dim, sizeof(int));
   if (d == NULL) {
-    fprintf(stderr, "Failed to allocate d.\n");
+    std::cerr << "Failed to allocate d.\n" << std::endl;
     exit(1);
   }
 

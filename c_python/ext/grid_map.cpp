@@ -3,12 +3,12 @@
 // Ported from https://github.com/Visual-Computing/DynamicExplorationGraph/tree/cb7243f7296ef4513b8a5177773a7f30826c5f7b/java/deg-visualization/src/main/java/com/vc/deg/viz/om
 //
 
-#include "grid_map.h"
+#include "grid_map.hpp"
 
+#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 
 // #include "det_random.h"
 
@@ -16,7 +16,7 @@
 int *empty_grid(int rows, int columns) {
   int *cells = (int *) malloc(rows * columns * sizeof(int));
   if (cells == NULL) {
-    fprintf(stderr, "Memory allocation failed\n");
+    std::cerr << "Memory allocation failed\n" << std::endl;
     exit(1);
   }
   for (int i = 0; i < rows * columns; i++) {
@@ -108,14 +108,14 @@ void clear(const GridMap *grid) {
 GridMap *copy(const GridMap *grid) {
   GridMap *new_grid = (GridMap *) malloc(sizeof(GridMap));
   if (new_grid == NULL) {
-    fprintf(stderr, "Failed to allocate new_grid.\n");
+    std::cerr << "Failed to allocate new_grid.\n" << std::endl;
     exit(1);
   }
   new_grid->rows = grid->rows;
   new_grid->columns = grid->columns;
   new_grid->cells = (int *) malloc(size(grid) * sizeof(int));
   if (new_grid->cells == NULL) {
-    fprintf(stderr, "Failed to allocate grid cells.\n");
+    std::cerr << "Failed to allocate grid cells.\n" << std::endl;
     exit(1);
   }
   memcpy(new_grid->cells, grid->cells, size(grid) * sizeof(int));

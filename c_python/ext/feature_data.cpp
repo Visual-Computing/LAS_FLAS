@@ -1,4 +1,6 @@
-#include "feature_data.h"
+#include "feature_data.hpp"
+
+#include <iostream>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -22,9 +24,9 @@ inverse indices:
 float *plane_2d(void) {
   const int n_cells = 16;
   const int dim = 3;
-  float *features = malloc(n_cells * dim * sizeof(float));
+  float *features = static_cast<float *>(malloc(n_cells * dim * sizeof(float)));
   if (features == NULL) {
-    fprintf(stderr, "Failed to allocate features.\n");
+    std::cerr << "Failed to allocate features.\n" << std::endl;
     exit(1);
   }
 
@@ -56,9 +58,9 @@ float *plane_2d(void) {
 
 float *random_features(const int grid_size) {
   const int dim = 3;
-  float *features = malloc(grid_size * grid_size * dim * sizeof(float));
+  float *features = static_cast<float *>(malloc(grid_size * grid_size * dim * sizeof(float)));
   if (features == NULL) {
-    fprintf(stderr, "Failed to allocate features.\n");
+    std::cerr << "Failed to allocate features.\n" << std::endl;
     exit(1);
   }
   for (int i = 0; i < grid_size * grid_size; i++) {

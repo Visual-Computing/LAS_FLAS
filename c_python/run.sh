@@ -1,3 +1,3 @@
 #!/bin/bash
 
-./build/FLAS_C
+PYTHONPATH="build" python3 src/main.py
