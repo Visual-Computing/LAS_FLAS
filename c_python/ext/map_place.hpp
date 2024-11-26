@@ -6,15 +6,13 @@
 #ifndef MAP_PLACE_H
 #define MAP_PLACE_H
 
-#include <stdbool.h>
-
 typedef struct {
   int id;
   const float *feature;
   bool is_swappable;
 } MapPlace;
 
-void init_map_place(MapPlace *map_place, const int id, const float *const feature, const bool is_swappable);
+void init_map_place(MapPlace *map_place, int id, const float *feature, bool is_swappable);
 
 void init_invalid_map_place(MapPlace *map_place);
 

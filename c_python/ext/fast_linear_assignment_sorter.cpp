@@ -2,18 +2,15 @@
 // Created by Bruno Schilling on 10/28/24.
 // Ported from https://github.com/Visual-Computing/DynamicExplorationGraph/tree/cb7243f7296ef4513b8a5177773a7f30826c5f7b/java/deg-visualization/src/main/java/com/vc/deg/viz/om
 //
+#include <cmath>
 #include <iostream>
 
 #include "fast_linear_assignment_sorter.hpp"
 #include "junker_volgenant_solver.hpp"
 
-#include <cmath>
 #include <cstring>
-#include <cstdio>
 
-// #include "det_random.h"
-
-const int QUANT = 256;
+constexpr int QUANT = 256;
 
 typedef struct {
   /**
@@ -206,7 +203,7 @@ void do_sorting_full(MapPlace *map_places, int dim, int columns, int rows, const
   do {
     copy_feature_vectors_to_som(&data, settings);
 
-    int radius = max(1, static_cast<int>(round(rad))); // set the radius
+    int radius = max(1, static_cast<int>(std::round(rad))); // set the radius
     int radius_x = max(1, min(columns / 2, radius));
     int radius_y = max(1, min(rows / 2, radius));
     rad *= settings->radius_decay;
@@ -248,12 +245,12 @@ void filter_weighted_som(
   int filter_size_x = 2 * act_radius_x + 1;
   int filter_size_y = 2 * act_radius_y + 1;
 
-  float *som_h = static_cast<float *>(malloc(data->grid_size * data->dim * sizeof(float)));
+  auto som_h = static_cast<float *>(malloc(data->grid_size * data->dim * sizeof(float)));
   if (som_h == nullptr) {
     std::cerr << "Failed to allocate som_h.\n" << std::endl;
     exit(1);
   }
-  float *weights_h = static_cast<float *>(malloc(data->grid_size * sizeof(float)));
+  auto weights_h = static_cast<float *>(malloc(data->grid_size * sizeof(float)));
   if (weights_h == nullptr) {
     std::cerr << "Failed to allocate weights_h.\n" << std::endl;
     exit(1);
@@ -334,7 +331,8 @@ void calc_dist_lut_l2_int(const InternalData *data) {
 
   for (int i = 0; i < data->num_swap_positions; i++)
     for (int j = 0; j < data->num_swap_positions; j++) {
-      data->dist_lut[i * data->num_swap_positions + j] = static_cast<int>(QUANT * data->dist_lut_f[i * data->num_swap_positions + j] / max + 0.5f);
+      data->dist_lut[i * data->num_swap_positions + j] = static_cast<int>(
+        static_cast<float>(QUANT) * data->dist_lut_f[i * data->num_swap_positions + j] / max + 0.5f);
     }
 }
 
@@ -414,7 +412,7 @@ void check_random_swaps(const InternalData *data, int radius, float sample_facto
   // get all positions of the actual swap region
   const int num_swap_indices = swap_area_width * swap_area_height;
   int *swap_indices = static_cast<int *>(malloc(num_swap_indices * sizeof(int)));
-  if (swap_indices == NULL) {
+  if (swap_indices == nullptr) {
     std::cerr << "Failed to allocate swap_indices.\n" << std::endl;
     exit(1);
   }
@@ -425,7 +423,7 @@ void check_random_swaps(const InternalData *data, int radius, float sample_facto
       swap_indices[i++] = y * data->columns + x;
   shuffle_array(swap_indices, num_swap_indices);
 
-  int num_swap_tries = (int) max(1, (sample_factor * data->grid_size / data->num_swap_positions));
+  int num_swap_tries = max(1, static_cast<int>(sample_factor) * data->grid_size / data->num_swap_positions);
   if (do_wrap) {
     for (int n = 0; n < num_swap_tries; n++) {
       find_swap_positions_wrap(data, swap_indices, num_swap_indices);
@@ -447,14 +445,14 @@ void filter_h_wrap(float *input, float *output, int rows, int columns, int dims,
   int ext = filter_size / 2; // size of the border extension
 
   // Allocate memory for the extended row
-  float **row_ext = (float **) malloc((columns + 2 * ext) * sizeof(float *));
-  if (row_ext == NULL) {
+  auto row_ext = static_cast<float **>(malloc((columns + 2 * ext) * sizeof(float *)));
+  if (row_ext == nullptr) {
     std::cerr << "Failed to allocate row_ext.\n" << std::endl;
     exit(1);
   }
 
-  float *tmp = (float *) malloc(dims * sizeof(float));
-  if (tmp == NULL) {
+  auto tmp = static_cast<float *>(malloc(dims * sizeof(float)));
+  if (tmp == nullptr) {
     std::cerr << "Failed to allocate tmp.\n" << std::endl;
     exit(1);
   }
@@ -482,7 +480,7 @@ void filter_h_wrap(float *input, float *output, int rows, int columns, int dims,
         tmp[d] += row_ext[i][d];
 
     for (int d = 0; d < dims; d++)
-      output[act_row * dims + d] = tmp[d] / (float) filter_size;
+      output[act_row * dims + d] = tmp[d] / static_cast<float>(filter_size);
 
     // Rest of the row
     for (int i = 1; i < columns; i++) {
@@ -491,7 +489,7 @@ void filter_h_wrap(float *input, float *output, int rows, int columns, int dims,
 
       for (int d = 0; d < dims; d++) {
         tmp[d] += row_ext[right][d] - row_ext[left][d];
-        output[(act_row + i) * dims + d] = tmp[d] / (float) filter_size;
+        output[(act_row + i) * dims + d] = tmp[d] / static_cast<float>(filter_size);
       }
     }
   }
@@ -507,8 +505,8 @@ void filter_h_wrap_1d(const float *input, float *output, int rows, int columns, 
   int ext = filter_size / 2; // size of the border extension
 
   // Allocate memory for the extended row
-  float *row_ext = (float *) malloc((columns + 2 * ext) * sizeof(float));
-  if (row_ext == NULL) {
+  auto row_ext = static_cast<float *>(malloc((columns + 2 * ext) * sizeof(float)));
+  if (row_ext == nullptr) {
     std::cerr << "Failed to allocate row_ext.\n" << std::endl;
     exit(1);
   }
@@ -534,14 +532,14 @@ void filter_h_wrap_1d(const float *input, float *output, int rows, int columns, 
     for (int i = 0; i < filter_size; i++)
       tmp += row_ext[i];
 
-    output[act_row] = tmp / (float) filter_size;
+    output[act_row] = tmp / static_cast<float>(filter_size);
 
     // Rest of the row
     for (int i = 1; i < columns; i++) {
       int left = i - 1;
       int right = left + filter_size;
       tmp += row_ext[right] - row_ext[left];
-      output[act_row + i] = tmp / (float) filter_size;
+      output[act_row + i] = tmp / static_cast<float>(filter_size);
     }
   }
 
@@ -556,13 +554,13 @@ void filter_v_wrap(float *input, float *output, int rows, int columns, int dims,
   int ext = filter_size / 2; // size of the border extension
 
   // Allocate memory for the extended column
-  float **col_ext = (float **) malloc((rows + 2 * ext) * sizeof(float *));
-  if (col_ext == NULL) {
+  auto col_ext = static_cast<float **>(malloc((rows + 2 * ext) * sizeof(float *)));
+  if (col_ext == nullptr) {
     std::cerr << "Failed to allocate col_ext.\n" << std::endl;
     exit(1);
   }
-  float *tmp = (float *) malloc(dims * sizeof(float));
-  if (tmp == NULL) {
+  auto tmp = static_cast<float *>(malloc(dims * sizeof(float)));
+  if (tmp == nullptr) {
     std::cerr << "Failed to allocate tmp.\n" << std::endl;
     exit(1);
   }
@@ -588,7 +586,7 @@ void filter_v_wrap(float *input, float *output, int rows, int columns, int dims,
         tmp[d] += col_ext[i][d];
 
     for (int d = 0; d < dims; d++)
-      output[(x * dims) + d] = tmp[d] / filter_size;
+      output[(x * dims) + d] = tmp[d] / static_cast<float>(filter_size);
 
     // Rest of the column
     for (int i = 1; i < rows; i++) {
@@ -597,7 +595,7 @@ void filter_v_wrap(float *input, float *output, int rows, int columns, int dims,
 
       for (int d = 0; d < dims; d++) {
         tmp[d] += col_ext[right][d] - col_ext[left][d];
-        output[(x + i * columns) * dims + d] = tmp[d] / filter_size;
+        output[(x + i * columns) * dims + d] = tmp[d] / static_cast<float>(filter_size);
       }
     }
   }
@@ -613,8 +611,8 @@ void filter_v_wrap_1d(const float *input, float *output, int rows, int columns, 
   int ext = filter_size / 2; // size of the border extension
 
   // Allocate memory for the extended column
-  float *col_ext = (float *) malloc((rows + 2 * ext) * sizeof(float));
-  if (col_ext == NULL) {
+  auto col_ext = static_cast<float *>(malloc((rows + 2 * ext) * sizeof(float)));
+  if (col_ext == nullptr) {
     std::cerr << "Failed to allocate col_ext.\n" << std::endl;
     exit(1);
   }
@@ -638,14 +636,14 @@ void filter_v_wrap_1d(const float *input, float *output, int rows, int columns, 
     for (int i = 0; i < filter_size; i++)
       tmp += col_ext[i];
 
-    output[x] = tmp / filter_size;
+    output[x] = tmp / static_cast<float>(filter_size);
 
     // Rest of the column
     for (int i = 1; i < rows; i++) {
       int left = i - 1;
       int right = left + filter_size;
       tmp += col_ext[right] - col_ext[left];
-      output[x + i * columns] = tmp / filter_size;
+      output[x + i * columns] = tmp / static_cast<float>(filter_size);
     }
   }
 
@@ -660,14 +658,14 @@ void filter_h_mirror(float *input, float *output, int rows, int columns, int dim
   int ext = filter_size / 2; // size of the border extension
 
   // Allocate memory for the extended row
-  float **row_ext = (float **) malloc((columns + 2 * ext) * sizeof(float *));
-  if (row_ext == NULL) {
+  auto row_ext = static_cast<float **>(malloc((columns + 2 * ext) * sizeof(float *)));
+  if (row_ext == nullptr) {
     std::cerr << "Failed to allocate row_ext.\n" << std::endl;
     exit(1);
   }
   // Allocate temporary storage for filter accumulation
-  float *tmp = (float *) malloc(dims * sizeof(float));
-  if (tmp == NULL) {
+  auto tmp = static_cast<float *>(malloc(dims * sizeof(float)));
+  if (tmp == nullptr) {
     std::cerr << "Failed to allocate tmp.\n" << std::endl;
     exit(1);
   }
@@ -695,7 +693,7 @@ void filter_h_mirror(float *input, float *output, int rows, int columns, int dim
         tmp[d] += row_ext[i][d];
 
     for (int d = 0; d < dims; d++)
-      output[act_row * dims + d] = tmp[d] / filter_size;
+      output[act_row * dims + d] = tmp[d] / static_cast<float>(filter_size);
 
     // Rest of the row
     for (int i = 1; i < columns; i++) {
@@ -704,7 +702,7 @@ void filter_h_mirror(float *input, float *output, int rows, int columns, int dim
 
       for (int d = 0; d < dims; d++) {
         tmp[d] += row_ext[right][d] - row_ext[left][d];
-        output[(act_row + i) * dims + d] = tmp[d] / filter_size;
+        output[(act_row + i) * dims + d] = tmp[d] / static_cast<float>(filter_size);
       }
     }
   }
@@ -720,8 +718,8 @@ void filter_h_mirror_1d(const float *input, float *output, int rows, int columns
   int ext = filter_size / 2; // size of the border extension
 
   // Allocate memory for the extended row
-  float *row_ext = (float *) malloc((columns + 2 * ext) * sizeof(float));
-  if (row_ext == NULL) {
+  auto row_ext = static_cast<float *>(malloc((columns + 2 * ext) * sizeof(float)));
+  if (row_ext == nullptr) {
     std::cerr << "Failed to allocate row_ext.\n" << std::endl;
     exit(1);
   }
@@ -747,14 +745,14 @@ void filter_h_mirror_1d(const float *input, float *output, int rows, int columns
     for (int i = 0; i < filter_size; i++)
       tmp += row_ext[i];
 
-    output[act_row] = tmp / (float) filter_size;
+    output[act_row] = tmp / static_cast<float>(filter_size);
 
     // Rest of the row
     for (int i = 1; i < columns; i++) {
       int left = i - 1;
       int right = left + filter_size;
       tmp += row_ext[right] - row_ext[left];
-      output[act_row + i] = tmp / (float) filter_size;
+      output[act_row + i] = tmp / static_cast<float>(filter_size);
     }
   }
 
@@ -769,14 +767,14 @@ void filter_v_mirror(float *input, float *output, int rows, int columns, int dim
   int ext = filter_size / 2; // size of the border extension
 
   // Allocate memory for the extended column
-  float **col_ext = (float **) malloc((rows + 2 * ext) * sizeof(float *));
-  if (col_ext == NULL) {
+  auto col_ext = static_cast<float **>(malloc((rows + 2 * ext) * sizeof(float *)));
+  if (col_ext == nullptr) {
     std::cerr << "Failed to allocate col_ext.\n" << std::endl;
     exit(1);
   }
   // Allocate temporary storage for filter accumulation
-  float *tmp = (float *) malloc(dims * sizeof(float));
-  if (tmp == NULL) {
+  auto tmp = static_cast<float *>(malloc(dims * sizeof(float)));
+  if (tmp == nullptr) {
     std::cerr << "Failed to allocate tmp.\n" << std::endl;
     exit(1);
   }
@@ -802,7 +800,7 @@ void filter_v_mirror(float *input, float *output, int rows, int columns, int dim
         tmp[d] += col_ext[i][d];
 
     for (int d = 0; d < dims; d++)
-      output[x * dims + d] = tmp[d] / filter_size;
+      output[x * dims + d] = tmp[d] / static_cast<float>(filter_size);
 
     // Rest of the column
     for (int i = 1; i < rows; i++) {
@@ -811,7 +809,7 @@ void filter_v_mirror(float *input, float *output, int rows, int columns, int dim
 
       for (int d = 0; d < dims; d++) {
         tmp[d] += col_ext[right][d] - col_ext[left][d];
-        output[(x + i * columns) * dims + d] = tmp[d] / filter_size;
+        output[(x + i * columns) * dims + d] = tmp[d] / static_cast<float>(filter_size);
       }
     }
   }
@@ -827,8 +825,8 @@ void filter_v_mirror_1d(const float *input, float *output, int rows, int columns
   int ext = filter_size / 2; // size of the border extension
 
   // Allocate memory for the extended column
-  float *col_ext = (float *) malloc((rows + 2 * ext) * sizeof(float));
-  if (col_ext == NULL) {
+  auto col_ext = static_cast<float *>(malloc((rows + 2 * ext) * sizeof(float)));
+  if (col_ext == nullptr) {
     std::cerr << "Failed to allocate col_ext.\n" << std::endl;
     exit(1);
   }
@@ -852,14 +850,14 @@ void filter_v_mirror_1d(const float *input, float *output, int rows, int columns
     for (int i = 0; i < filter_size; i++)
       tmp += col_ext[i];
 
-    output[x] = tmp / (float) filter_size;
+    output[x] = tmp / static_cast<float>(filter_size);
 
     // Rest of the column
     for (int i = 1; i < rows; i++) {
       int left = i - 1;
       int right = left + filter_size;
       tmp += col_ext[right] - col_ext[left];
-      output[x + i * columns] = tmp / (float) filter_size;
+      output[x + i * columns] = tmp / static_cast<float>(filter_size);
     }
   }
 

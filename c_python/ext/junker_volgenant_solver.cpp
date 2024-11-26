@@ -4,59 +4,57 @@
 //
 
 #include <iostream>
-#include <stdlib.h>
-#include <limits.h>
-#include <stdio.h>
-#include <string.h>
+#include <climits>
+#include <cstring>
 
-int *compute_assignment(int *matrix, int dim) {
+int *compute_assignment(const int *matrix, int dim) {
   int i, imin, i0, freerow;
   int j, j1, j2 = 0, endofpath = 0, last = 0, min = 0;
 
-  int *in_row = (int *) calloc(dim, sizeof(int));
-  if (in_row == NULL) {
+  int *in_row = static_cast<int *>(calloc(dim, sizeof(int)));
+  if (in_row == nullptr) {
     std::cerr << "Failed to allocate inRow.\n" << std::endl;
     exit(1);
   }
 
-  int *in_col = (int *) calloc(dim, sizeof(int));
-  if (in_col == NULL) {
+  int *in_col = static_cast<int *>(calloc(dim, sizeof(int)));
+  if (in_col == nullptr) {
     std::cerr << "Failed to allocate inCol.\n" << std::endl;
     exit(1);
   }
 
-  int *v = (int *) calloc(dim, sizeof(int));
-  if (v == NULL) {
+  int *v = static_cast<int *>(calloc(dim, sizeof(int)));
+  if (v == nullptr) {
     std::cerr << "Failed to allocate v.\n" << std::endl;
     exit(1);
   }
 
-  int *free_ = (int *) calloc(dim, sizeof(int));
-  if (free_ == NULL) {
+  int *free_ = static_cast<int *>(calloc(dim, sizeof(int)));
+  if (free_ == nullptr) {
     std::cerr << "Failed to allocate free_.\n" << std::endl;
     exit(1);
   }
 
-  int *collist = (int *) calloc(dim, sizeof(int));
-  if (collist == NULL) {
+  int *collist = static_cast<int *>(calloc(dim, sizeof(int)));
+  if (collist == nullptr) {
     std::cerr << "Failed to allocate collist.\n" << std::endl;
     exit(1);
   }
 
-  int *matches = (int *) calloc(dim, sizeof(int));
-  if (matches == NULL) {
+  int *matches = static_cast<int *>(calloc(dim, sizeof(int)));
+  if (matches == nullptr) {
     std::cerr << "Failed to allocate matches.\n" << std::endl;
     exit(1);
   }
 
-  int *pred = (int *) calloc(dim, sizeof(int));
-  if (pred == NULL) {
+  int *pred = static_cast<int *>(calloc(dim, sizeof(int)));
+  if (pred == nullptr) {
     std::cerr << "Failed to allocate pred.\n" << std::endl;
     exit(1);
   }
 
-  int *d = (int *) calloc(dim, sizeof(int));
-  if (d == NULL) {
+  int *d = static_cast<int *>(calloc(dim, sizeof(int)));
+  if (d == nullptr) {
     std::cerr << "Failed to allocate d.\n" << std::endl;
     exit(1);
   }

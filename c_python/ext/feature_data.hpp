@@ -6,7 +6,7 @@
 #ifndef FEATURE_DATA_H
 #define FEATURE_DATA_H
 
-float* plane_2d(void);
-float* random_features(const int grid_size);
+float* plane_2d();
+float* random_features(int grid_size);
 
 #endif //FEATURE_DATA_H

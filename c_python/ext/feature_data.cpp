@@ -2,11 +2,6 @@
 
 #include <iostream>
 
-#include <stdlib.h>
-#include <stdio.h>
-
-// #include "det_random.h"
-
 /*
 shuffled values of a grid in a 2d plane.
 
@@ -21,11 +16,11 @@ inverse indices:
    4  2  0  5
    7  9 14 12
 */
-float *plane_2d(void) {
+float *plane_2d() {
   const int n_cells = 16;
   const int dim = 3;
-  float *features = static_cast<float *>(malloc(n_cells * dim * sizeof(float)));
-  if (features == NULL) {
+  auto features = static_cast<float *>(malloc(n_cells * dim * sizeof(float)));
+  if (features == nullptr) {
     std::cerr << "Failed to allocate features.\n" << std::endl;
     exit(1);
   }
@@ -56,17 +51,17 @@ float *plane_2d(void) {
   return features;
 }
 
-float *random_features(const int grid_size) {
+float *random_features(int grid_size) {
   const int dim = 3;
-  float *features = static_cast<float *>(malloc(grid_size * grid_size * dim * sizeof(float)));
-  if (features == NULL) {
+  auto features = static_cast<float *>(malloc(grid_size * grid_size * dim * sizeof(float)));
+  if (features == nullptr) {
     std::cerr << "Failed to allocate features.\n" << std::endl;
     exit(1);
   }
   for (int i = 0; i < grid_size * grid_size; i++) {
     for (int d = 0; d < dim; d++) {
       // features[i * dim + d] = det_next_float();
-      features[i * dim + d] = rand() / (float) RAND_MAX;
+      features[i * dim + d] = rand() / static_cast<float>(RAND_MAX);
     }
   }
   return features;
