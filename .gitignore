@@ -2,8 +2,8 @@ data/
 
 python/.ipynb_checkpoints/
 
-/c/build
-/c/.idea
-/c/cmake-build-debug-coverage
-/c/cmake-build-debug
+/c_python/build
+/c_python/.idea
+/c_python/cmake-build-debug-coverage
+/c_python/cmake-build-debug
 
