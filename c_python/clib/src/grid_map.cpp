@@ -3,7 +3,7 @@
 // Ported from https://github.com/Visual-Computing/DynamicExplorationGraph/tree/cb7243f7296ef4513b8a5177773a7f30826c5f7b/java/deg-visualization/src/main/java/com/vc/deg/viz/om
 //
 
-#include "grid_map.h"
+#include "grid_map.hpp"
 
 #include <stdio.h>
 #include <stdlib.h>

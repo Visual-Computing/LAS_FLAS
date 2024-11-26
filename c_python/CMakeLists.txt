@@ -1,31 +1,21 @@
-cmake_minimum_required(VERSION 3.29)
-project(FLAS_C C)
+# python-bindings/CMakeLists.txt
+cmake_minimum_required(VERSION 3.19)
+project(flas_c_py)
 
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_BUILD_TYPE Debug)
+# Add python executable
+if(DEFINED PYTHON_EXECUTABLE)
+    set(Python_EXECUTABLE ${PYTHON_EXECUTABLE})
+endif()
+find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
 
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(GTK REQUIRED gtk+-2.0)
+# Add pybind11
+find_package(pybind11 CONFIG REQUIRED)
 
-include_directories(${GTK_INCLUDE_DIRS})
-link_directories(${GTK_LIBRARY_DIRS})
+# Specify the include directories
+include_directories(${CMAKE_SOURCE_DIR}/clib/src)
 
-add_executable(FLAS_C
-    src/main.c
-        src/feature_data.c
-        src/feature_data.h
-        src/flas_adapter.h
-        src/grid_map.c
-        src/grid_map.h
-        src/flas_adapter.c
-        src/fast_linear_assignment_sorter.h
-        src/fast_linear_assignment_sorter.c
-        src/map_place.h
-        src/map_place.c
-        src/junker_volgenant_solver.h
-        src/junker_volgenant_solver.c
-        src/det_random.c
-        src/det_random.h)
+# Add cpp-flas
+add_subdirectory(${CMAKE_SOURCE_DIR}/clib/)
+pybind11_add_module(flas_c_py clib/src/flas_c.cpp)
 
-target_link_libraries(FLAS_C ${GTK_LIBRARIES})
-target_link_libraries(FLAS_C m)
+target_link_libraries(flas_c_py PRIVATE compile-options)

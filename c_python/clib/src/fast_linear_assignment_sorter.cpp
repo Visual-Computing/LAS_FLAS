@@ -4,8 +4,8 @@
 //
 #include <stdbool.h>
 
-#include "fast_linear_assignment_sorter.h"
-#include "junker_volgenant_solver.h"
+#include "fast_linear_assignment_sorter.hpp"
+#include "junker_volgenant_solver.hpp"
 
 #include <math.h>
 #include <stdlib.h>
