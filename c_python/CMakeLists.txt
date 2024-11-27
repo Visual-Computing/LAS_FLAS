@@ -37,7 +37,7 @@ target_include_directories(flas_c PUBLIC
 )
 
 # Add Python bindings
-pybind11_add_module(flas_c_py src/flas_c.cpp)
+pybind11_add_module(flas_c_py flas/flas_c.cpp)
 
 # Link the C++ library to the Python module
 target_link_libraries(flas_c_py PRIVATE flas_c)
