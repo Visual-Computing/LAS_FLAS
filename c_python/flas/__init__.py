@@ -158,7 +158,8 @@ class Grid:
         # check fields already taken
         for p in pos:
             for sf in self.static_features:
-                if np.any(sf[1] == p):
+                sf_pos = sf[1]
+                if np.any(np.all(p == sf_pos, axis=1)):
                     raise ValueError('Position {} is already taken'.format(p))
 
         self.static_features.append((features, pos, frozen))
@@ -172,7 +173,10 @@ class Grid:
         """
         if isinstance(pos, np.ndarray):
             pos = tuple(pos.T)
-        return self.grid[pos]
+
+        for sf in self.static_features:
+            if np.all(sf[1] == pos):
+                return sf[0]
 
     def compile(self, aspect_ratio: float):
         """

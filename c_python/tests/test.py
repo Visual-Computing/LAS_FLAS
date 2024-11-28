@@ -10,6 +10,7 @@ def main():
     features = np.random.random((10, DIM))
     grid.add(features)
     grid.put(features, np.arange(10*2).reshape(10, 2))
+    # grid.put(features, np.arange(10*2).reshape(10, 2))
     print(grid)
 
 
