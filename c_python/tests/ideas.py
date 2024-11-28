@@ -1,9 +1,10 @@
 import numpy as np
 
-from flas import flas
+from flas import flas, Grid
 
 
 HEIGHT, WIDTH, DIM = 13, 13, 3
+N_SAMPLES = HEIGHT * WIDTH
 
 
 def main():
@@ -18,16 +19,9 @@ def main():
     flas(features_2d, frozen, valid)
 
 
-# Use grid class to give user fine-grained control over grid layout
-class Grid:
-    def __init__(self):
-        self.grid = np.zeros((HEIGHT, WIDTH))
-
-    def add(self, feature):
-        ...
-
-    def put(self, feature, x, y, frozen=False):
-        self.grid[y, x] = feature
-
-    def get(self, x, y):
-        return self.grid[y, x]
+def use_grid():
+    # create a grid
+    grid = Grid()  # grid with scalable size
+    grid = Grid.with_size(HEIGHT, WIDTH)  #
+    grid = Grid.from_data(np.random.random((HEIGHT, WIDTH, DIM)))
+    grid = Grid.from_data(np.random.random((N_SAMPLES, DIM)))
