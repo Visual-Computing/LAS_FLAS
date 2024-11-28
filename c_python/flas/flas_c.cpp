@@ -120,7 +120,28 @@ std::tuple<int, py::array_t<int32_t> > flas_1d_features(
   return std::make_tuple(0, result_indices);
 }
 
+
+std::tuple<uint32_t, uint32_t> get_optimal_grid_size(
+  uint32_t total_num_features, float aspect_ratio, uint32_t min_height, uint32_t min_width
+) {
+    while (total_num_features > min_height * min_width) {
+        float asp = static_cast<float>(min_width) / static_cast<float>(min_height);
+        if (asp == aspect_ratio) {
+          if (min_width < min_height)
+            min_width++;
+          else
+            min_height++;
+        } else if (asp < aspect_ratio) {
+          min_width++;
+        } else {
+            min_height++;
+        }
+    }
+    return std::make_tuple(min_height, min_width);
+}
+
 PYBIND11_MODULE(flas_c_py, m) {
   m.def("flas_2d_features", &flas_2d_features);
   m.def("flas_1d_features", &flas_1d_features);
+  m.def("get_optimal_grid_size", &get_optimal_grid_size);
 }
