@@ -17,16 +17,13 @@ def flas(features: np.ndarray, frozen: Optional[np.ndarray] = None, wrap: bool =
     :param wrap: If True, the features on the right side will be similar to features on the left side as well as
                  features on top of the plane will be similar to features on the bottom.
     :param radius_decay: How much should the filter radius decay at each iteration.
-    :param max_swap_positions: <Höher, wenn besserer Solver> (Quadratzahlen)
+    :param max_swap_positions: Number of possible swaps to hand over to solver. Should be a square number.
     :param weight_swappable:
     :param weight_non_swappable:
     :param weight_hole:
-    :return:
+    :return: a 2d numpy array with shape (height, width). The cell at (y, x) contains the index of the feature that
+             should be at (y, x). Indices are in scanline order.
     """
-    initial_radius_factor: float = 0.5
-    num_filters: int = 1
-    radius_end: float = 1.0
-    sample_factor: float = 1.0
     if len(features.shape) != 3:
         raise ValueError('features must have shape (height, width, dims) but got {}'.format(features.shape))
 
@@ -47,8 +44,7 @@ def flas(features: np.ndarray, frozen: Optional[np.ndarray] = None, wrap: bool =
             return np.arange(np.prod(features.shape[:2])).reshape(features.shape[:2])
 
     success, result = flas_c_py.flas(
-        features, frozen, wrap, initial_radius_factor, radius_decay, num_filters, radius_end, weight_swappable,
-        weight_non_swappable, weight_hole, sample_factor, max_swap_positions
+        features, frozen, wrap, radius_decay, weight_swappable, weight_non_swappable, weight_hole, max_swap_positions
     )
     if success != 0:
         raise RuntimeError('FLAS failed with error code {}'.format(success))

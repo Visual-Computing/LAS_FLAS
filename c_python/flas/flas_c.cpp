@@ -10,8 +10,8 @@ namespace py = pybind11;
 std::tuple<int, py::array_t<uint32_t> > flas(
   const py::array_t<float, py::array::c_style> &features,
   const py::array_t<bool, py::array::c_style> &in_use,
-  const bool wrap, const float initial_radius_factor, float radius_decay, int num_filters, float radius_end,
-  float weight_swappable, float weight_non_swappable, float weight_hole, float sample_factor, int max_swap_positions
+  const bool wrap, float radius_decay, float weight_swappable, float weight_non_swappable, float weight_hole,
+  int max_swap_positions
 ) {
   const py::buffer_info features_info = features.request();
   const ssize_t height = features_info.shape[0];
@@ -30,8 +30,9 @@ std::tuple<int, py::array_t<uint32_t> > flas(
 
   const GridMap grid_map = init_grid_map(static_cast<int>(height), static_cast<int>(width));
 
-  const FlasSettings settings(wrap, initial_radius_factor, radius_decay, num_filters, radius_end, weight_swappable,
-                        weight_non_swappable, weight_hole, sample_factor, max_swap_positions);
+  const FlasSettings settings(
+    wrap, 0.5f, radius_decay, 1, 1.0f, weight_swappable, weight_non_swappable, weight_hole, 1.0f, max_swap_positions
+  );
 
   arrange_with_holes(
     static_cast<const float *>(features_info.ptr),
