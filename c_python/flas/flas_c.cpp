@@ -9,10 +9,12 @@ namespace py = pybind11;
 
 std::tuple<int, py::array_t<int32_t> > flas_2d_features(
   const py::array_t<float, py::array::c_style> &features,
+  const py::array_t<int32_t, py::array::c_style> &ids,
   const py::array_t<bool, py::array::c_style> &frozen,
   const bool wrap, float radius_decay, float weight_swappable, float weight_non_swappable, float weight_hole,
   int max_swap_positions
 ) {
+  // features
   const py::buffer_info features_info = features.request();
   const ssize_t height = features_info.shape[0];
   const ssize_t width = features_info.shape[1];
@@ -24,11 +26,20 @@ std::tuple<int, py::array_t<int32_t> > flas_2d_features(
   if (features_info.ndim != 3)
     return std::make_tuple(1, result_indices);
 
+  // ids
+  const py::buffer_info ids_info = ids.request();
+  if (ids_info.ndim != 2)
+    return std::make_tuple(3, result_indices);
+
+  if (ids_info.shape[0] != height || ids_info.shape[1] != width)
+    return std::make_tuple(3, result_indices);
+
+  // frozen
   const py::buffer_info frozen_info = frozen.request();
   if (frozen_info.ndim != 2)
-    return std::make_tuple(2, result_indices);
+    return std::make_tuple(4, result_indices);
 
-  const GridMap grid_map = init_grid_map(static_cast<int>(height), static_cast<int>(width));
+  const GridMap grid_map = init_grid_map_with_ids(static_cast<int>(height), static_cast<int>(width), static_cast<int32_t*>(ids_info.ptr));
 
   const FlasSettings settings(
     wrap, 0.5f, radius_decay, 1, 1.0f, weight_swappable, weight_non_swappable, weight_hole, 1.0f, max_swap_positions
