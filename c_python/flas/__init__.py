@@ -5,86 +5,15 @@ import numpy as np
 import flas_c_py
 
 
-def flas(features: np.ndarray, frozen: Optional[np.ndarray] = None, aspect_ratio: float = 1.0, wrap: bool = False,
-         freeze_holes: bool = True, radius_decay: float = 0.93, max_swap_positions: int = 9,
-         weight_swappable: float = 1.0, weight_non_swappable: float = 100.0, weight_hole: float = 0.01) -> np.ndarray:
-    """
-    Sorts the given features into a 2d plane, so that similar features are close together.
-    See https://github.com/Visual-Computing/LAS_FLAS for details.
-
-    :param features: A numpy array with shape (height, width, dims) of type float32 (otherwise it will be cast).
-    :param frozen: A numpy array with shape (height, width) of type bool. If None, all features are assumed to be not
-                   frozen. Frozen features will not be moved.
-    :param aspect_ratio: The desired aspect ratio of the plane. Only used, if features are given in 1d.
-    :param wrap: If True, the features on the right side will be similar to features on the left side as well as
-                 features on top of the plane will be similar to features on the bottom.
-    :param freeze_holes: If True, holes in the plane will be frozen.
-    :param radius_decay: How much should the filter radius decay at each iteration.
-    :param max_swap_positions: Number of possible swaps to hand over to solver. Should be a square number.
-    :param weight_swappable:
-    :param weight_non_swappable:
-    :param weight_hole:
-    :return: a 2d numpy array with shape (height, width). The cell at (y, x) contains the index of the feature that
-             should be at (y, x). Indices are in scanline order.
-    """
-    code = 1
-    result = None
-
-    if isinstance(features, Grid):  # TODO: grid case
-        raise NotImplementedError()
-    elif len(features.shape) == 2:  # 1d features case
-        if features.dtype != np.float32:
-            features = features.astype(np.float32)
-        if frozen is not None:
-            warnings.warn(
-                'frozen will be ignored, because features are not given in grid. features.shape={}'
-                .format(features.shape)
-            )
-        code, result = flas_c_py.flas_1d_features(
-            features, aspect_ratio, freeze_holes, wrap, radius_decay, weight_swappable, weight_non_swappable,
-            weight_hole, max_swap_positions
-        )
-    elif len(features.shape) == 3:  # 2d features case
-        if features.dtype != np.float32:
-            features = features.astype(np.float32)
-        if frozen is None:
-            frozen = np.zeros(features.shape[:2], dtype=np.bool)
-        else:
-            if frozen.shape != features.shape[:2]:
-                raise ValueError(
-                    'frozen must have same size as features {} but got {}'.format(features.shape[:2], frozen.shape)
-                )
-            if frozen.dtype != np.bool:
-                raise TypeError('frozen must be of type np.bool but got "{}"'.format(frozen.dtype))
-            if np.all(frozen):
-                # if all features are frozen, we return identity sorting.
-                return np.arange(np.prod(features.shape[:2])).reshape(features.shape[:2])
-        code, result = flas_c_py.flas_2d_features(
-            features, frozen, wrap, radius_decay, weight_swappable, weight_non_swappable, weight_hole,
-            max_swap_positions
-        )
-    else:
-        features_info = type(features).__name__
-        if isinstance(features, np.ndarray):
-            features_info = 'numpy array with shape {}'.format(features.shape)
-        raise ValueError(
-            'features must be Grid or a numpy array with shape (height, width, dims) or (n, dims) but got {}'
-            .format(features_info)
-        )
-
-    if code != 0:
-        raise RuntimeError('FLAS failed with error code {}'.format(code))
-    return result
-
-
 class Grid:
-    def __init__(self, check_overwrite: bool = False):
+    def __init__(self, aspect_ratio: float = 1.0, check_overwrite: bool = False):
         self.size: Optional[Tuple[int, int]] = None
         self.dim: Optional[int] = None
         self.grid: Optional[np.ndarray] = None
         self.grid_taken: Optional[np.ndarray] = None
         self.grid_frozen: Optional[np.ndarray] = None
         self.lazy_features: List[np.ndarray] = []
+        self.aspect_ratio = aspect_ratio
         self.check_overwrite = check_overwrite
 
     def __repr__(self):
@@ -182,12 +111,10 @@ class Grid:
 
         return self.grid[pos]
 
-    def compile(self, aspect_ratio: float):
+    def compile(self):
         """
-        Returns a numpy array with shape (h, w, d), if there are features with a defined position.
-        Returns a numpy array with shape (n, d), if there are no features with a defined position.
+        Compiles this grid into numpy arrays, which can be used for the flas algorithm.
 
-        :param aspect_ratio: The aspect ratio
         :return: A tuple with three numpy arrays: (features, taken, frozen).
                  features is a numpy array with shape (h, w, d), where d is the feature dimensionality and h and w are
                  height and width of the feature plane.
@@ -198,7 +125,7 @@ class Grid:
         """
         if self.grid is None or np.sum(self.grid_taken) == 0:  # only dynamic features
             n_features = self._num_lazy_features()
-            height, width = flas_c_py.get_optimal_grid_size(n_features, aspect_ratio, 2, 2)
+            height, width = flas_c_py.get_optimal_grid_size(n_features, self.aspect_ratio, 2, 2)
 
             # features
             features = self.lazy_features
@@ -208,6 +135,7 @@ class Grid:
                 features = features + [padding_features]
             features = np.concatenate(features)
             num_cells = features.shape[0]
+            features = features.reshape(height, width, self.dim)
 
             # taken
             taken = np.zeros(num_cells, dtype=np.bool)
@@ -224,7 +152,9 @@ class Grid:
             total_num_features = num_static_features + num_lazy_features
 
             # get width / height to fit all lazy features
-            height, width = flas_c_py.get_optimal_grid_size(total_num_features, aspect_ratio, *self.grid_taken.shape)
+            height, width = flas_c_py.get_optimal_grid_size(
+                total_num_features, self.aspect_ratio, *self.grid_taken.shape
+            )
 
             # scale grids to new size
             new_grid = _embed_array(self.grid, (height, width))
@@ -267,6 +197,55 @@ class Grid:
 
     def _num_lazy_features(self) -> int:
         return sum(f.shape[0] for f in self.lazy_features)
+
+
+def flas(features: Grid | np.ndarray, wrap: bool = False, radius_decay: float = 0.93, max_swap_positions: int = 9,
+         weight_swappable: float = 1.0, weight_non_swappable: float = 100.0, weight_hole: float = 0.01) -> np.ndarray:
+    """
+    Sorts the given features into a 2d plane, so that similar features are close together.
+    See https://github.com/Visual-Computing/LAS_FLAS for details.
+
+    :param features: A numpy array with shape (height, width, dims) of type float32 (otherwise it will be cast).
+    :param wrap: If True, the features on the right side will be similar to features on the left side as well as
+                 features on top of the plane will be similar to features on the bottom.
+    :param radius_decay: How much should the filter radius decay at each iteration.
+    :param max_swap_positions: Number of possible swaps to hand over to solver. Should be a square number.
+    :param weight_swappable:
+    :param weight_non_swappable:
+    :param weight_hole:
+    :return: a 2d numpy array with shape (height, width). The cell at (y, x) contains the index of the feature that
+             should be at (y, x). Indices are in scanline order.
+    """
+    if isinstance(features, Grid):
+        features, taken, frozen = features.compile()
+    elif isinstance(features, np.ndarray):
+        if features.dtype != np.float32:
+            features = features.astype(np.float32)
+        if features.ndim == 3:
+            taken = np.ones(features.shape[:2], dtype=np.bool)
+            frozen = np.zeros(features.shape[:2], dtype=np.bool)
+        elif features.ndim == 2:  # 1d features case
+            grid = Grid.from_data(features)
+            features, taken, frozen = grid.compile()
+        else:
+            raise ValueError('features must have shape (h, w, d) or (n, d) but got: {}'.format(features.shape))
+    else:
+        raise TypeError('features must be a Grid or a numpy array but got: {}'.format(type(features)))
+
+    # TODO: this is wrong, when using ids
+    if np.all(frozen):
+        # if all features are frozen, we return identity sorting.
+        return np.arange(np.prod(features.shape[:2])).reshape(features.shape[:2])
+
+    code, result = flas_c_py.flas_2d_features(
+        features, frozen, wrap, radius_decay, weight_swappable, weight_non_swappable, weight_hole,
+        max_swap_positions
+    )
+
+    if code != 0:
+        raise RuntimeError('FLAS failed with error code {}'.format(code))
+
+    return result
 
 
 def _embed_array(array: np.ndarray, new_size: Tuple[int, int]) -> np.ndarray:
