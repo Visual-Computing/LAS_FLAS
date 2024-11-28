@@ -186,9 +186,30 @@ class Grid:
         :param aspect_ratio: The aspect ratio
         :return:
         """
-        if self.lazy_features:
-            self._num_lazy_features()
-        pass
+        num_static_features = np.sum(self.grid_taken)
+        num_lazy_features = self._num_lazy_features()
+        height, width = self.grid_taken.shape
+
+        # get width / height to fit all lazy features
+        if num_lazy_features:
+            while num_lazy_features > height * width - num_static_features:
+                if width / height < aspect_ratio:
+                    width += 1
+                else:
+                    height += 1
+
+        # scale grids to new size
+        new_grid = _embed_array(self.grid, (height, width))
+        new_grid_taken = _embed_array(self.grid_taken, (height, width))
+        new_frozen = _embed_array(self.frozen, (height, width))
+
+        # apply lazy features
+        free_indices = np.where(np.logical_not(new_grid_taken))
+        free_indices = tuple(fi[:num_lazy_features] for fi in free_indices)
+        new_grid[free_indices] = np.concatenate(self.lazy_features)
+        new_grid_taken[free_indices] = True
+
+        return new_grid, new_grid_taken, new_frozen
 
     def _check_newdim(self, new_dim):
         if self.dim is None:
