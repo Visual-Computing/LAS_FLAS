@@ -305,7 +305,7 @@ void find_swap_positions_wrap(const InternalData *data, const int *swap_indices,
     int y = (d / data->columns) % data->rows;
     int pos = y * data->columns + x;
 
-    if (data->map_places[pos].id > -1 || data->map_places[pos].is_swappable)
+    if (data->map_places[pos].id == -1 || data->map_places[pos].is_swappable)
       data->swap_positions[current_num_swap_positions++] = pos;
   }
 }
