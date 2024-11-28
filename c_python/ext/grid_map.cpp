@@ -42,6 +42,17 @@ GridMap init_grid_map(int rows, int columns) {
   return grid;
 }
 
+GridMap init_grid_map_with_ids(int rows, int columns, const int32_t *ids) {
+  GridMap grid;
+  grid.rows = rows;
+  grid.columns = columns;
+  grid.cells = uninit_grid(rows, columns);
+  for (int i = 0; i < rows * columns; i++) {
+    grid.cells[i] = ids[i];
+  }
+  return grid;
+}
+
 GridMap init_grid_map_with_n_features(int rows, int columns, ssize_t num_cells) {
   GridMap grid;
   grid.rows = rows;

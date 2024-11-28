@@ -18,6 +18,8 @@ int *full_grid(int rows, int columns);
 // Function to initialize a new GridMap
 GridMap init_grid_map(int rows, int columns);
 
+GridMap init_grid_map_with_ids(int rows, int columns, const int32_t *ids);
+
 GridMap init_grid_map_with_n_features(int rows, int columns, ssize_t num_cells);
 
 // Function to calculate the total number of cells

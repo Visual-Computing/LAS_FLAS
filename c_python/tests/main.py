@@ -10,8 +10,9 @@ DIM = 3
 
 def test_2d():
     features = np.random.random((HEIGHT * WIDTH, DIM)).astype(np.float32)
+    ids = np.arange(HEIGHT * WIDTH)
 
-    grid = Grid.from_data(features)
+    grid = Grid.from_data(features, ids)
     # print(features)
     frozen = np.zeros((HEIGHT, WIDTH)).astype(np.bool)
     frozen[:10, :10] = True
