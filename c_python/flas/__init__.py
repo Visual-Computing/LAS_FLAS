@@ -79,12 +79,13 @@ def flas(features: np.ndarray, frozen: Optional[np.ndarray] = None, aspect_ratio
 
 class Grid:
     def __init__(self):
-        self.grid: Optional[np.ndarray] = None
-        self.grid_set: Optional[np.ndarray] = None
-        self.frozen: Optional[np.ndarray] = None
         self.size: Optional[Tuple[int, int]] = None
         self.dim: Optional[int] = None
+        self.static_features: List[Tuple[np.ndarray, np.ndarray, np.ndarray]] = []
         self.lazy_features: List[np.ndarray] = []
+
+    def __repr__(self):
+        return 'Grid(size={}, dim={})'.format(self.size, self.dim)
 
     @classmethod
     def with_size(cls, height: int, width: int):
@@ -106,9 +107,6 @@ class Grid:
             grid = Grid()
             grid.dim = features.shape[-1]
             grid._resize(features.shape[:2])
-            grid.grid = features
-            grid.grid_set = np.ones(features.shape[:2], dtype=np.bool)
-            grid.frozen = np.zeros(features.shape[:2], dtype=np.bool)
         else:
             raise ValueError('features must have shape (h, w, d) or (n, d) but got: {}'.format(features.shape))
         return grid
@@ -140,20 +138,30 @@ class Grid:
         """
         self._check_newdim(features.shape[-1])
 
+        features = features.reshape(-1, self.dim)
+        n_features = features.shape[0]
+
+        # check pos
         if isinstance(pos, tuple):
             pos = np.array(pos)
+        old_pos_shape = pos.shape
         pos = pos.reshape(-1, 2)
+        if pos.shape != (n_features, 2):
+            raise ValueError('pos must have shape (n, 2) or (2,) but got: {}'.format(old_pos_shape))
 
-        new_size = np.max(pos, axis=0)
-        if self.size is not None:
-            new_size = np.maximum(new_size, self.size)
-        self._resize(new_size)
+        # check frozen
+        if isinstance(frozen, bool):
+            frozen = np.full(n_features, frozen)
+        if frozen.shape != (n_features,):
+            raise ValueError('frozen must have shape (n,) but got: {}'.format(frozen.shape))
 
-        if np.any(self.grid_set[tuple(pos.T)]):
-            raise ValueError('Some positions are already occupied.')
-        self.grid[tuple(pos.T)] = features
-        self.grid_set[tuple(pos.T)] = True
-        self.frozen[tuple(pos.T)] = frozen
+        # check fields already taken
+        for p in pos:
+            for sf in self.static_features:
+                if np.any(sf[1] == p):
+                    raise ValueError('Position {} is already taken'.format(p))
+
+        self.static_features.append((features, pos, frozen))
 
     def get(self, pos: Tuple[int, int] | np.ndarray) -> np.ndarray:
         """
@@ -165,6 +173,18 @@ class Grid:
         if isinstance(pos, np.ndarray):
             pos = tuple(pos.T)
         return self.grid[pos]
+
+    def compile(self, aspect_ratio: float):
+        """
+        Returns a numpy array with shape (h, w, d), if there are features with a defined position.
+        Returns a numpy array with shape (n, d), if there are no features with a defined position.
+
+        :param aspect_ratio: The aspect ratio
+        :return:
+        """
+        if self.lazy_features:
+            self._num_lazy_features()
+        pass
 
     def _check_newdim(self, new_dim):
         if self.dim is None:
@@ -178,14 +198,6 @@ class Grid:
 
     def _resize(self, new_size: Tuple[int, int]):
         self.size = new_size
-        if self.grid is not None:
-            self.grid = _embed_array(self.grid, self.size)
-            self.grid_set = _embed_array(self.grid_set, self.size)
-            self.frozen = _embed_array(self.frozen, self.size)
-        elif self.dim is not None:
-            self.grid = np.zeros((*self.size, self.dim), dtype=np.float32)
-            self.grid_set = np.zeros(self.size, dtype=np.bool)
-            self.frozen = np.zeros(self.size, dtype=np.bool)
 
     def _num_lazy_features(self) -> int:
         return sum(f.shape[0] for f in self.lazy_features)
