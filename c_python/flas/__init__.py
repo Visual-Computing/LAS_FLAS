@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List, Tuple
 import warnings
 
 import numpy as np
@@ -78,7 +78,143 @@ def flas(features: np.ndarray, frozen: Optional[np.ndarray] = None, aspect_ratio
 
 
 class Grid:
-    pass
+    def __init__(self):
+        self.grid: Optional[np.ndarray] = None
+        self.grid_set: Optional[np.ndarray] = None
+        self.frozen: Optional[np.ndarray] = None
+        self.size: Optional[Tuple[int, int]] = None
+        self.dim: Optional[int] = None
+        self.lazy_features: List[np.ndarray] = []
+
+    @classmethod
+    def with_size(cls, height: int, width: int):
+        grid = Grid()
+        grid._resize((height, width))
+        return grid
+
+    @classmethod
+    def from_data(cls, features: np.ndarray):
+        """
+        Creates a grid with the given features.
+        :param features: A numpy array with shape (h, w, d) or (n, d).
+        """
+        if features.ndim == 2:
+            grid = Grid()
+            grid.dim = features.shape[-1]
+            grid.lazy_features.append(features)
+        elif features.ndim == 3:
+            grid = Grid()
+            grid.dim = features.shape[-1]
+            grid._resize(features.shape[:2])
+            grid.grid = features
+            grid.grid_set = np.ones(features.shape[:2], dtype=np.bool)
+            grid.frozen = np.zeros(features.shape[:2], dtype=np.bool)
+        else:
+            raise ValueError('features must have shape (h, w, d) or (n, d) but got: {}'.format(features.shape))
+        return grid
+
+    def add(self, features: np.ndarray):
+        """
+        Add the given features anywhere to the grid.
+        :param features: numpy array with shape (d,) or (n, d), where d is the feature dimensionality and n is the
+                         number of features.
+        """
+        if features.ndim == 1:
+            features = features.reshape(1, -1)
+
+        if features.ndim != 2:
+            raise ValueError('Features must have shape (n, d) but got: {}'.format(features.shape))
+
+        self._check_newdim(features.shape[-1])
+        self.lazy_features.append(features)
+
+    def put(self, features: np.ndarray, pos: Tuple[int, int] | np.ndarray, frozen: bool | np.ndarray = True):
+        """
+        Put the given features to the given position.
+
+        :param features: numpy array with shape (n, d) or (d,), where d is the feature dimensionality and n is the
+                         number of features.
+        :param pos: tuple (y, x) or numpy array with shape (n, 2) or (2,), where n is the number of positions to put
+                    the features to. Should have the same n as features.
+        :param frozen: bool or numpy array with shape (n,), defining whether the given features should be frozen.
+        """
+        self._check_newdim(features.shape[-1])
+
+        if isinstance(pos, tuple):
+            pos = np.array(pos)
+        pos = pos.reshape(-1, 2)
+
+        new_size = np.max(pos, axis=0)
+        if self.size is not None:
+            new_size = np.maximum(new_size, self.size)
+        self._resize(new_size)
+
+        if np.any(self.grid_set[tuple(pos.T)]):
+            raise ValueError('Some positions are already occupied.')
+        self.grid[tuple(pos.T)] = features
+        self.grid_set[tuple(pos.T)] = True
+        self.frozen[tuple(pos.T)] = frozen
+
+    def get(self, pos: Tuple[int, int] | np.ndarray) -> np.ndarray:
+        """
+        Get the features at the given position.
+        :param pos: The position to get the feature from. Can be a tuple (y, x) or a numpy array with shape (n, 2) where
+                    n is the number of positions to get.
+        :return:
+        """
+        if isinstance(pos, np.ndarray):
+            pos = tuple(pos.T)
+        return self.grid[pos]
+
+    def _check_newdim(self, new_dim):
+        if self.dim is None:
+            self.dim = new_dim
+        else:
+            if self.dim != new_dim:
+                raise ValueError(
+                    'Features must have same dimension as previous features but got old_dim != new_dim: {} != {}'
+                    .format(self.dim, new_dim)
+                )
+
+    def _resize(self, new_size: Tuple[int, int]):
+        self.size = new_size
+        if self.grid is not None:
+            self.grid = _embed_array(self.grid, self.size)
+            self.grid_set = _embed_array(self.grid_set, self.size)
+            self.frozen = _embed_array(self.frozen, self.size)
+        elif self.dim is not None:
+            self.grid = np.zeros((*self.size, self.dim), dtype=np.float32)
+            self.grid_set = np.zeros(self.size, dtype=np.bool)
+            self.frozen = np.zeros(self.size, dtype=np.bool)
+
+    def _num_lazy_features(self) -> int:
+        return sum(f.shape[0] for f in self.lazy_features)
+
+
+def _embed_array(array: np.ndarray, new_size: Tuple[int, int]) -> np.ndarray:
+    """
+    Embeds a 3D array into a new array with a larger shape.
+
+    Parameters:
+    :param array:  Input array with shape [h, w, d].
+    :param new_size: Tuple (new_h, new_w), the shape of the new array's first two dimensions.
+
+    :return: New array with shape [new_h, new_w, d], containing the original array.
+    """
+    h, w = array.shape[:2]
+    rest_shape = array.shape[2:]
+    new_h, new_w = new_size
+
+    if new_h < h or new_w < w:
+        raise ValueError("New size must be greater than or equal to the original size.")
+
+    # Create a new array filled with zeros
+    new_array = np.zeros((new_h, new_w, *rest_shape), dtype=array.dtype)
+
+    # Embed the original array into the new array
+    new_array[:h, :w] = array
+
+    return new_array
 
 
 def apply_sorting(features, sorting):
