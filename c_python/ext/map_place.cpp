@@ -10,8 +10,8 @@ void init_map_place(MapPlace *map_place, const int id, const float *const featur
   map_place->is_swappable = is_swappable;
 }
 
-void init_invalid_map_place(MapPlace *map_place) {
+void init_invalid_map_place(MapPlace *map_place, const bool is_swappable) {
   map_place->id = -1;
   map_place->feature = nullptr;
-  map_place->is_swappable = false;
+  map_place->is_swappable = is_swappable;
 }

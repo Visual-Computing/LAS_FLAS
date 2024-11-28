@@ -8,7 +8,7 @@
 
 #include <iostream>
 
-void arrange_with_holes(const float *features, const int dim, const GridMap *map, const bool *in_use, const FlasSettings* settings) {
+void arrange_with_holes(const float *features, const int dim, const GridMap *map, const bool *frozen, const FlasSettings* settings) {
   int rows = map->rows;
   int columns = map->columns;
 
@@ -22,11 +22,12 @@ void arrange_with_holes(const float *features, const int dim, const GridMap *map
     for (int x = 0; x < columns; x++) {
       int content = get(map, x, y);
       MapPlace *current_place = &map_places[x + y * columns];
+      const bool place_frozen = frozen[x + y * columns];
       if (content != -1) {
         const float *const float_feature = features + (content * dim);
-        init_map_place(current_place, content, float_feature, !in_use[x + y * columns]);
+        init_map_place(current_place, content, float_feature, !place_frozen);
       } else {
-        init_invalid_map_place(current_place);
+        init_invalid_map_place(current_place, !place_frozen);
       }
     }
   }
