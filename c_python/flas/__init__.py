@@ -184,32 +184,40 @@ class Grid:
         Returns a numpy array with shape (n, d), if there are no features with a defined position.
 
         :param aspect_ratio: The aspect ratio
-        :return:
+        :return: A tuple with three numpy arrays: (features, taken, frozen).
+                 features is a numpy array with shape (h, w, d) or (n, d), where d is the feature dimensionality, h and
+                 w are height and width of the feature plane and n is the number of features.
+                 taken is a boolean numpy array with shape (h, w) or (n,), where True indicates that the feature is
+                 valid (not a hole).
+                 frozen is a boolean numpy array with shape (h, w) or (n,), where True indicates that the feature is
+                 frozen (should not be swapped).
         """
-        num_static_features = np.sum(self.grid_taken)
-        num_lazy_features = self._num_lazy_features()
-        height, width = self.grid_taken.shape
+        if self.grid is None or np.sum(self.grid_taken) == 0:  # only dynamic features
+            features = np.concatenate(self.lazy_features)
+            n_features = features.shape[0]
+            taken = np.zeros(n_features, dtype=np.bool)
+            taken[:n_features] = True
+            return features, taken, np.zeros(n_features, dtype=np.bool)
+        else:
+            num_static_features = np.sum(self.grid_taken)
+            num_lazy_features = self._num_lazy_features()
+            total_num_features = num_static_features + num_lazy_features
 
-        # get width / height to fit all lazy features
-        if num_lazy_features:
-            while num_lazy_features > height * width - num_static_features:
-                if width / height < aspect_ratio:
-                    width += 1
-                else:
-                    height += 1
+            # get width / height to fit all lazy features
+            height, width = get_optimal_grid_size(total_num_features, aspect_ratio, *self.grid_taken.shape)
 
-        # scale grids to new size
-        new_grid = _embed_array(self.grid, (height, width))
-        new_grid_taken = _embed_array(self.grid_taken, (height, width))
-        new_frozen = _embed_array(self.frozen, (height, width))
+            # scale grids to new size
+            new_grid = _embed_array(self.grid, (height, width))
+            new_grid_taken = _embed_array(self.grid_taken, (height, width))
+            new_frozen = _embed_array(self.frozen, (height, width))
 
-        # apply lazy features
-        free_indices = np.where(np.logical_not(new_grid_taken))
-        free_indices = tuple(fi[:num_lazy_features] for fi in free_indices)
-        new_grid[free_indices] = np.concatenate(self.lazy_features)
-        new_grid_taken[free_indices] = True
+            # apply lazy features
+            free_indices = np.where(np.logical_not(new_grid_taken))
+            free_indices = tuple(fi[:num_lazy_features] for fi in free_indices)
+            new_grid[free_indices] = np.concatenate(self.lazy_features)
+            new_grid_taken[free_indices] = True
 
-        return new_grid, new_grid_taken, new_frozen
+            return new_grid, new_grid_taken, new_frozen
 
     def _check_newdim(self, new_dim):
         if self.dim is None:
@@ -265,6 +273,15 @@ def _embed_array(array: np.ndarray, new_size: Tuple[int, int]) -> np.ndarray:
     new_array[:h, :w] = array
 
     return new_array
+
+
+def get_optimal_grid_size(total_num_features, aspect_ratio, min_height, min_width):
+    while total_num_features > min_height * min_width:
+        if min_width / min_height < aspect_ratio:
+            min_width += 1
+        else:
+            min_height += 1
+    return min_height, min_width
 
 
 def apply_sorting(features, sorting):
