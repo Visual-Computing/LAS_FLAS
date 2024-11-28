@@ -4,6 +4,7 @@
 //
 #ifndef GRID_MAP_H
 #define GRID_MAP_H
+#include <sys/types.h>
 
 typedef struct {
   int rows;
@@ -12,10 +13,12 @@ typedef struct {
 } GridMap;
 
 // Function to create an empty grid filled with -1 values
-int *empty_grid(int rows, int columns);
+int *full_grid(int rows, int columns);
 
 // Function to initialize a new GridMap
 GridMap init_grid_map(int rows, int columns);
+
+GridMap init_grid_map_with_n_features(int rows, int columns, ssize_t num_cells);
 
 // Function to calculate the total number of cells
 int size(const GridMap *grid);

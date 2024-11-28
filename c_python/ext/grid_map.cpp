@@ -12,7 +12,7 @@
 // #include "det_random.h"
 
 // Function to create an empty grid filled with -1 values
-int *empty_grid(int rows, int columns) {
+int *full_grid(int rows, int columns) {
   int *cells = static_cast<int *>(malloc(rows * columns * sizeof(int)));
   if (cells == nullptr) {
     std::cerr << "Memory allocation failed\n" << std::endl;
@@ -24,12 +24,35 @@ int *empty_grid(int rows, int columns) {
   return cells;
 }
 
+int *uninit_grid(int rows, int columns) {
+  int *cells = static_cast<int *>(malloc(rows * columns * sizeof(int)));
+  if (cells == nullptr) {
+    std::cerr << "Memory allocation failed\n" << std::endl;
+    exit(1);
+  }
+  return cells;
+}
+
 // Function to initialize a new GridMap
 GridMap init_grid_map(int rows, int columns) {
   GridMap grid;
   grid.rows = rows;
   grid.columns = columns;
-  grid.cells = empty_grid(rows, columns);
+  grid.cells = full_grid(rows, columns);
+  return grid;
+}
+
+GridMap init_grid_map_with_n_features(int rows, int columns, ssize_t num_cells) {
+  GridMap grid;
+  grid.rows = rows;
+  grid.columns = columns;
+  grid.cells = uninit_grid(rows, columns);
+  for (int i = 0; i < num_cells; i++) {
+    grid.cells[i] = i;
+  }
+  for (ssize_t i = num_cells; i < rows * columns; i++) {
+    grid.cells[i] = -1;
+  }
   return grid;
 }
 
