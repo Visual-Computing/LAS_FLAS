@@ -6,17 +6,17 @@ DIM = 5
 
 
 def main():
-    start_features = np.random.random((10, 10, DIM))
-    features = np.random.random((3, DIM))
+    grid_features = np.random.random((5, 5, DIM))
+    random_features = np.random.random((290, DIM))
 
     # grid = Grid()
-    grid = Grid.from_data(start_features)
-    grid.add(features)
+    grid = Grid.from_data(grid_features)
+    grid.add(random_features)
 
-    pos = np.arange(features.shape[0] * 2).reshape(features.shape[0], 2)
-    # grid.put(features, pos+11)
-    features, taken, frozen = grid.compile(16 / 9)
-    print('features:', features.shape, ' taken:', taken.shape, '  frozen:', frozen.shape)
+    # pos = np.arange(random_features.shape[0] * 2).reshape(random_features.shape[0], 2)
+    # grid.put(random_features, pos+11)
+    random_features, taken, frozen = grid.compile(16 / 9)
+    print('random_features:', random_features.shape, ' taken:', taken.shape, '  frozen:', frozen.shape)
     print(np.sum(taken), np.sum(np.logical_not(taken)))
 
 
