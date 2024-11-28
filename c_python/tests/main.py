@@ -2,22 +2,23 @@
 
 from PIL import Image
 import numpy as np
-from flas import flas, apply_sorting
+from flas import flas, apply_sorting, Grid
 
-
-HEIGHT, WIDTH = 64, 64
+HEIGHT, WIDTH = 64, 128
 DIM = 3
 
 
 def test_2d():
-    features = np.random.random((HEIGHT, WIDTH, DIM)).astype(np.float32)
+    features = np.random.random((HEIGHT * WIDTH, DIM)).astype(np.float32)
+
+    grid = Grid.from_data(features)
     # print(features)
     frozen = np.zeros((HEIGHT, WIDTH)).astype(np.bool)
     frozen[:10, :10] = True
     # frozen = np.logical_not(frozen)
     # print(frozen)
 
-    sorting = flas(features, frozen, wrap=True)
+    sorting = flas(grid, wrap=True)
 
     sorted_features = apply_sorting(features, sorting)
     # print(sorted_features, sorted_features.dtype, sorted_features.shape)
@@ -29,7 +30,7 @@ def test_2d():
 def test_1d():
     features = np.random.random((HEIGHT * WIDTH, DIM)).astype(np.float32)
 
-    sorting = flas(features, aspect_ratio=16 / 9, wrap=True, freeze_holes=True)
+    sorting = flas(features, wrap=False)
     print('sorting.shape:', sorting.shape)
     print(sorting)
 
@@ -41,5 +42,5 @@ def test_1d():
 
 
 if __name__ == '__main__':
-    # test_2d()
-    test_1d()
+    test_2d()
+    # test_1d()
