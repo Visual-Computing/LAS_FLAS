@@ -178,7 +178,6 @@ class Grid:
                 padding_features = np.zeros((n_missing_features, self.dim), dtype=np.float32)
                 features = features + [padding_features]
             features = np.concatenate(features)
-            num_cells = features.shape[0]
             features = features.reshape(height, width, self.dim)
 
             # ids
