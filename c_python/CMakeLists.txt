@@ -4,7 +4,7 @@ cmake_policy(SET CMP0054 NEW)
 cmake_policy(SET CMP0148 NEW)
 
 # Project name and language
-project(flas_c_py LANGUAGES CXX)
+project(flas_cpp LANGUAGES CXX)
 
 # Include pybind11
 find_package(pybind11 CONFIG REQUIRED)
@@ -37,7 +37,7 @@ target_include_directories(flas_c PUBLIC
 )
 
 # Add Python bindings
-pybind11_add_module(flas_c_py flas/flas_c.cpp)
+pybind11_add_module(flas_cpp flas/flas_c.cpp)
 
 # Link the C++ library to the Python module
-target_link_libraries(flas_c_py PRIVATE flas_c)
+target_link_libraries(flas_cpp PRIVATE flas_c)

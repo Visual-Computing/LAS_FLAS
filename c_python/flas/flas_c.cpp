@@ -99,7 +99,7 @@ std::tuple<uint32_t, uint32_t> get_optimal_grid_size(
     return std::make_tuple(min_height, min_width);
 }
 
-PYBIND11_MODULE(flas_c_py, m) {
+PYBIND11_MODULE(flas_cpp, m) {
   m.def("flas_2d_features", &flas_2d_features);
   m.def("get_optimal_grid_size", &get_optimal_grid_size);
 }

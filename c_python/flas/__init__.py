@@ -1,7 +1,7 @@
 from typing import Optional, List, Tuple, Any
 
 import numpy as np
-import flas_c_py
+import flas_cpp
 
 
 class Grid:
@@ -169,7 +169,7 @@ class Grid:
         """
         if self.grid_ids is None or np.sum(self.grid_ids != -1) == 0:  # only dynamic features
             n_features = self._num_lazy_features()
-            height, width = flas_c_py.get_optimal_grid_size(n_features, self.aspect_ratio, 2, 2)
+            height, width = flas_cpp.get_optimal_grid_size(n_features, self.aspect_ratio, 2, 2)
 
             # features
             features = [f for f, _ in self.lazy_features]
@@ -178,7 +178,6 @@ class Grid:
                 padding_features = np.zeros((n_missing_features, self.dim), dtype=np.float32)
                 features = features + [padding_features]
             features = np.concatenate(features)
-            num_cells = features.shape[0]
             features = features.reshape(height, width, self.dim)
 
             # ids
@@ -200,7 +199,7 @@ class Grid:
             total_num_features = num_static_features + num_lazy_features
 
             # get width / height to fit all lazy features
-            height, width = flas_c_py.get_optimal_grid_size(
+            height, width = flas_cpp.get_optimal_grid_size(
                 total_num_features, self.aspect_ratio, *self.grid_ids.shape
             )
 
@@ -290,7 +289,7 @@ def flas(features: Grid | np.ndarray, wrap: bool = False, radius_decay: float = 
         # if all features are frozen, we return identity sorting.
         return np.arange(np.prod(features.shape[:2])).reshape(features.shape[:2])
 
-    code, result = flas_c_py.flas_2d_features(
+    code, result = flas_cpp.flas_2d_features(
         features, ids, frozen, wrap, radius_decay, weight_swappable, weight_non_swappable, weight_hole,
         max_swap_positions
     )
