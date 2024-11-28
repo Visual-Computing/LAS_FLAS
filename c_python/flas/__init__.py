@@ -162,10 +162,11 @@ class Grid:
             new_frozen = _embed_array(self.frozen, (height, width))
 
             # apply lazy features
-            free_indices = np.where(np.logical_not(new_grid_taken))
-            free_indices = tuple(fi[:num_lazy_features] for fi in free_indices)
-            new_grid[free_indices] = np.concatenate(self.lazy_features)
-            new_grid_taken[free_indices] = True
+            if self.lazy_features:
+                free_indices = np.where(np.logical_not(new_grid_taken))
+                free_indices = tuple(fi[:num_lazy_features] for fi in free_indices)
+                new_grid[free_indices] = np.concatenate(self.lazy_features)
+                new_grid_taken[free_indices] = True
 
             return new_grid, new_grid_taken, new_frozen
 
