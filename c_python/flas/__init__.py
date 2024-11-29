@@ -274,8 +274,8 @@ class GridBuilder:
         A grid consists of three numpy arrays: (features, labels, frozen).
                  features is a numpy array with shape (h, w, d), where d is the feature dimensionality and h and w are
                  height and width of the feature plane.
-                 labels is an int numpy array with shape (h, w), where -1 indicates that the feature is a hole. Any other
-                 number is the id of the feature.
+                 labels is an int numpy array with shape (h, w), where -1 indicates that the feature is a hole.
+                 Any other number is the id of the feature.
                  frozen is a boolean numpy array with shape (h, w), where True indicates that the feature is frozen
                  (should not be moved).
         :param freeze_holes: If True, holes are frozen.
