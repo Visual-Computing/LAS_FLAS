@@ -167,13 +167,7 @@ class GridBuilder:
             raise ValueError('features must have shape (n, d) but got: {}'.format(features.shape))
 
         labels = self.labeler.update_or_create(labels, features.shape)
-        if np.isscalar(labels):
-            labels = np.array([labels])
-        if features.shape[:-1] != labels.shape:
-            raise ValueError('features and labels must have same size. features.shape != labels.shape: {} != {}'.format(
-                features.shape, labels.shape))
-        if not np.isdtype(labels.dtype, 'integral'):
-            raise ValueError('labels must be an integer array but got: {}'.format(labels.dtype))
+        labels = self._check_valid_labels(features, labels)
 
         self._check_newdim(features.shape[-1])
         self.lazy_features.append((features, labels))
@@ -216,13 +210,7 @@ class GridBuilder:
 
         # check labels
         labels = self.labeler.update_or_create(labels, features.shape)
-        if np.isscalar(labels):
-            labels = np.array([labels])
-        if features.shape[:-1] != labels.shape:
-            raise ValueError('features and labels must have same size. features.shape != labels.shape: {} != {}'.format(
-                features.shape, labels.shape))
-        if not np.isdtype(labels.dtype, 'integral'):
-            raise ValueError('ids must be an integer array but got: {}'.format(labels.dtype))
+        labels = self._check_valid_labels(features, labels)
 
         # resize grid
         new_size = np.max(pos, axis=0) + 1
@@ -240,6 +228,19 @@ class GridBuilder:
         self.grid_features[tuple(pos.T)] = features
         self.frozen[tuple(pos.T)] = frozen
 
+        return labels
+
+    @classmethod
+    def _check_valid_labels(cls, features, labels):
+        if np.isscalar(labels):
+            labels = np.array([labels])
+        if features.shape[:-1] != labels.shape:
+            raise ValueError('features and labels must have same size. features.shape != labels.shape: {} != {}'.format(
+                features.shape, labels.shape))
+        if not np.isdtype(labels.dtype, 'integral'):
+            raise ValueError('ids must be an integer array but got: {}'.format(labels.dtype))
+        if np.any(labels < 0):
+            raise ValueError('labels must be >= 0 but got label {}'.format(np.min(labels)))
         return labels
 
     def get_features(self, pos: Tuple[int, int] | np.ndarray) -> np.ndarray:
