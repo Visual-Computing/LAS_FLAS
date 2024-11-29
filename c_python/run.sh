@@ -5,7 +5,7 @@ case "$1" in
 		PYTHONPATH="build:." python3 tests/main.py && gwenview images/image1.png 2>/dev/null
 		;;
 	t)
-		PYTHONPATH="build:." python3 tests/test.py
+		PYTHONPATH="$PWD" pytest
 		;;
 	*)
 		echo "invalid option"
