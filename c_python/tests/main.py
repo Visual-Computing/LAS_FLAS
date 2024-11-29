@@ -15,21 +15,21 @@ def test_2d():
     rng = np.random.default_rng()
     query_labels = rng.choice(a=N_ALL_FEATURES, size=QUERY_SIZE, replace=False, shuffle=False)
 
-    all_features[query_labels[0]] = np.array([1, 1, 1])
     query_features = all_features[query_labels]
+    query_features[0] = np.array([1, 1, 1])
 
     grid_builder = GridBuilder(aspect_ratio=1.0)
     grid_builder.put(
         query_features[0],
         (32, 32),
-        query_labels[0],
+        # query_labels[0],
     )
     grid_builder.add(
         features=query_features[1:],
-        labels=query_labels[1:]
+        # labels=query_labels[1:]
     )
 
-    arrangement = flas(grid_builder.build(freeze_holes=True), wrap=False, radius_decay=0.93)
+    arrangement = flas(grid_builder.build(freeze_holes=False), wrap=False, radius_decay=0.93)
 
     sorted_features = arrangement.get_sorted_features()
 
