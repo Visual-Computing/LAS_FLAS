@@ -5,76 +5,136 @@ import flas_cpp
 
 
 class Grid:
-    def __init__(self, aspect_ratio: float = 1.0, check_overwrite: bool = False):
-        self.size: Optional[Tuple[int, int]] = None
-        self.dim: Optional[int] = None
+    def __init__(self, features: np.ndarray, ids: np.ndarray, frozen: np.ndarray, labels: np.ndarray):
+        """
+        Creates a new grid.
+
+        :param features: Numpy array with shape (n, d), where n is the number of features and d is the dimensionality
+                         of each feature.
+        :param ids: Numpy array with shape (h, w). Each id is the index into the features array. If id[y, x] == -1, this
+                    marks a hole.
+        :param frozen: Boolean array with shape (h, w). If frozen[y, x] == True, the field at (y, x) cannot be moved.
+        :param labels: The external labels with shape (n,) and dtype uint32.
+        """
+        n, dim = features.shape
+        height, width = ids.shape
+        if frozen.shape != (height, width):
+            raise ValueError('frozen must have shape (h, w) but got: {}'.format(frozen.shape))
+        if labels.shape != (n,):
+            raise ValueError('labels must have shape (n,) but got: {}'.format(labels.shape))
+        if np.max(ids) >= n:
+            raise ValueError('ids must be smaller than n but got id={} (n={})'.format(np.max(ids), n))
+
+        if features.dtype != np.float32:
+            raise ValueError('features must have dtype float32 but got: {}'.format(features.dtype))
+        if ids.dtype != np.int32:
+            raise ValueError('ids must have dtype int32 but got: {}'.format(ids.dtype))
+        if frozen.dtype != np.bool:
+            raise ValueError('frozen must have dtype bool but got: {}'.format(frozen.dtype))
+        if not np.isdtype(labels.dtype, 'integral'):
+            raise ValueError('labels must have integer dtype but got: {}'.format(labels.dtype))
+
+        self.features = features
+        self.ids = ids
+        self.frozen = frozen
+        self.labels = labels
+
+    @classmethod
+    def from_data(cls, features: np.ndarray, aspect_ratio: float = 1.0, freeze_holes: bool = True):
+        """
+        Creates a new grid from the given features.
+
+        :param features: numpy array with shape (h, w, d) or (n, d).
+        :param aspect_ratio: The preferred aspect ratio of the grid. This is only used if features has shape (n, d).
+                             Otherwise, the dimensions of the given features are used.
+        :param freeze_holes: Sometimes holes are needed, to create a grid with the given aspect ratio. In this case this
+                             parameter defines whether holes should be frozen.
+        :return:
+        """
+        if features.dtype != np.float32:
+            features = features.astype(np.float32)
+
+        if features.ndim == 3:
+            height, width, dim = features.shape
+            n = height * width
+            return Grid(
+                features=features.reshape(n, dim),
+                ids=np.arange(n, dtype=np.int32).reshape(height, width),
+                frozen=np.zeros((height, width), dtype=np.bool),
+                labels=np.arange(n, dtype=np.uint32),
+            )
+        elif features.ndim == 2:  # 1d features case
+            n, dim = features.shape
+            height, width = flas_cpp.get_optimal_grid_size(n, aspect_ratio, 2, 2)
+
+            # ids
+            ids = np.full(height * width, -1, dtype=np.int32)
+            ids[:n] = np.arange(n, dtype=np.int32)
+
+            # frozen
+            frozen = np.zeros((height, width), dtype=np.bool)
+            if freeze_holes:
+                frozen[n:] = True  # freeze holes
+
+            return Grid(
+                features=features,
+                ids=ids.reshape(height, width),
+                frozen=frozen,
+                labels=np.arange(n, dtype=np.uint32),
+            )
+        else:
+            raise ValueError('features must have shape (h, w, d) or (n, d) but got: {}'.format(features.shape))
+
+
+class GridBuilder:
+    def __init__(
+            self, size: Tuple[int, int] = (1, 1), aspect_ratio: float = 1.0, check_overwrite: bool = False, dim: int = 0
+    ):
+        self.size: Tuple[int, int] = size
+        self.dim: int = dim
         self.grid_features: Optional[np.ndarray] = None
-        self.grid_ids: Optional[np.ndarray] = None
+        self.grid_labels: Optional[np.ndarray] = None
         self.grid_frozen: Optional[np.ndarray] = None
         self.lazy_features: List[Tuple[np.ndarray, np.ndarray]] = []
         self.aspect_ratio = aspect_ratio
         self.check_overwrite = check_overwrite
 
     def __repr__(self):
-        return 'Grid(size={}, dim={})'.format(self.size, self.dim)
+        dim = self.dim
+        if dim == 0:
+            dim = 'unknown'
+        return 'Grid(size={}, dim={})'.format(self.size, dim)
 
-    @classmethod
-    def from_data(cls, features: np.ndarray, ids: np.ndarray):
-        """
-        Creates a grid with the given features.
-        :param features: A numpy array with shape (h, w, d) or (n, d).
-        :param ids: A numpy array with shape (h, w) or (n,). Each id at ids[y, x] corresponds to feature[y, x] for later
-                    identification.
-        """
-        if features.shape[:-1] != ids.shape:
-            raise ValueError('features and ids must have same size. features.shape != ids.shape: {} != {}'.format(
-                features.shape, ids.shape))
-        if not np.isdtype(ids.dtype, 'integral'):
-            raise ValueError('ids must be an integer array but got: {}'.format(ids.dtype))
-
-        if features.ndim == 2:
-            grid = Grid()
-            grid.dim = features.shape[-1]
-            grid.lazy_features.append((features, ids))
-        elif features.ndim == 3:
-            grid = Grid()
-            grid.dim = features.shape[-1]
-            grid._resize(features.shape[:2])
-            grid.grid_features = features
-            grid.grid_ids = ids
-            grid.frozen = np.zeros(features.shape[:2], dtype=np.bool)
-        else:
-            raise ValueError('features must have shape (h, w, d) or (n, d) but got: {}'.format(features.shape))
-        return grid
-
-    def add(self, features: np.ndarray, ids: int | np.ndarray):
+    def add(self, features: np.ndarray, labels: int | np.ndarray):
         """
         Add the given features anywhere to the grid.
         :param features: numpy array with shape (d,) or (n, d), where d is the feature dimensionality and n is the
                          number of features.
-        :param ids: integer or numpy array with shape (n,), where n is the number of features. Each id at ids[i]
-                    identifies on feature.
+        :param labels: integer or numpy array with shape (n,), where n is the number of features. Each label at
+                       labels[i] identifies one feature.
         """
         if features.ndim == 1:
             features = features.reshape(1, -1)
 
+        print('add n:', features.shape[0])
+
         if features.ndim != 2:
             raise ValueError('features must have shape (n, d) but got: {}'.format(features.shape))
 
-        if isinstance(ids, int):
-            ids = np.array([ids])
-        if features.shape[:-1] != ids.shape:
-            raise ValueError('features and ids must have same size. features.shape != ids.shape: {} != {}'.format(
-                features.shape, ids.shape))
-        if not np.isdtype(ids.dtype, 'integral'):
-            raise ValueError('ids must be an integer array but got: {}'.format(ids.dtype))
+        if isinstance(labels, int):
+            labels = np.array([labels])
+        if features.shape[:-1] != labels.shape:
+            raise ValueError('features and labels must have same size. features.shape != labels.shape: {} != {}'.format(
+                features.shape, labels.shape))
+        if not np.isdtype(labels.dtype, 'integral'):
+            raise ValueError('labels must be an integer array but got: {}'.format(labels.dtype))
 
         self._check_newdim(features.shape[-1])
-        self.lazy_features.append((features, ids))
+        self.lazy_features.append((features, labels))
 
     def put(
             self, features: np.ndarray, pos: Tuple[int, int] | np.ndarray,
-            ids: int | np.ndarray, frozen: bool | np.ndarray = True
+            labels: int | np.ndarray, frozen: bool | np.ndarray = True
     ):
         """
         Put the given features to the given position.
@@ -83,14 +143,15 @@ class Grid:
                          number of features.
         :param pos: tuple (y, x) or numpy array with shape (n, 2) or (2,), where n is the number of positions to put
                     the features to. Should have the same n as features.
-        :param ids: integer or numpy array with shape (n,), where n is the number of features. Each id at ids[i]
-                    identifies feature[i].
+        :param labels: integer or numpy array with shape (n,), where n is the number of features. Each labels at
+                       labels[i] identifies feature[i].
         :param frozen: bool or numpy array with shape (n,), defining whether the given features should be frozen.
         """
         self._check_newdim(features.shape[-1])
 
         features = features.reshape(-1, self.dim)
         n_features = features.shape[0]
+        print('put n:', n_features)
 
         # check pos
         if isinstance(pos, tuple):
@@ -107,13 +168,13 @@ class Grid:
             raise ValueError('frozen must have shape (n,) but got: {}'.format(frozen.shape))
 
         # check ids
-        if isinstance(ids, int):
-            ids = np.array([ids])
-        if features.shape[:-1] != ids.shape:
-            raise ValueError('features and ids must have same size. features.shape != ids.shape: {} != {}'.format(
-                features.shape, ids.shape))
-        if not np.isdtype(ids.dtype, 'integral'):
-            raise ValueError('ids must be an integer array but got: {}'.format(ids.dtype))
+        if np.isscalar(labels):
+            labels = np.array([labels])
+        if features.shape[:-1] != labels.shape:
+            raise ValueError('features and labels must have same size. features.shape != labels.shape: {} != {}'.format(
+                features.shape, labels.shape))
+        if not np.isdtype(labels.dtype, 'integral'):
+            raise ValueError('ids must be an integer array but got: {}'.format(labels.dtype))
 
         # resize grid
         new_size = np.max(pos, axis=0) + 1
@@ -123,11 +184,11 @@ class Grid:
 
         # check overwrite
         if self.check_overwrite:
-            if np.any(self.grid_ids[tuple(pos.T)] >= 0):
+            if np.any(self.grid_labels[tuple(pos.T)] >= 0):
                 raise ValueError('Position is already taken')
 
         # save features
-        self.grid_ids[tuple(pos.T)] = ids
+        self.grid_labels[tuple(pos.T)] = labels
         self.grid_features[tuple(pos.T)] = features
         self.frozen[tuple(pos.T)] = frozen
 
@@ -143,86 +204,96 @@ class Grid:
 
         return self.grid_features[pos]
 
-    def get_ids(self, pos: Tuple[int, int] | np.ndarray) -> np.ndarray:
+    def get_labels(self, pos: Tuple[int, int] | np.ndarray) -> np.ndarray:
         """
-        Get the ids at the given position.
-        :param pos: The position to get the feature from. Can be a tuple (y, x) or a numpy array with shape (n, 2) where
+        Get the labels at the given position.
+        :param pos: The position to get the labels from. Can be a tuple (y, x) or a numpy array with shape (n, 2) where
                     n is the number of positions to get.
         :return: The features at the given positions
         """
         if isinstance(pos, np.ndarray):
             pos = tuple(pos.T)
 
-        return self.grid_ids[pos]
+        return self.grid_labels[pos]
 
-    def compile(self):
+    def build(self) -> Grid:
         """
-        Compiles this grid into numpy arrays, which can be used for the flas algorithm.
+        Builds a grid consisting of three numpy arrays, which can be used for the flas algorithm.
 
-        :return: A tuple with three numpy arrays: (features, ids, frozen).
+        A grid consists of three numpy arrays: (features, labels, frozen).
                  features is a numpy array with shape (h, w, d), where d is the feature dimensionality and h and w are
                  height and width of the feature plane.
-                 ids is an int numpy array with shape (h, w), where -1 indicates that the feature is a hole. Any other
+                 labels is an int numpy array with shape (h, w), where -1 indicates that the feature is a hole. Any other
                  number is the id of the feature.
                  frozen is a boolean numpy array with shape (h, w), where True indicates that the feature is frozen
                  (should not be moved).
         """
-        if self.grid_ids is None or np.sum(self.grid_ids != -1) == 0:  # only dynamic features
+        if self.grid_labels is None or np.sum(self.grid_labels != -1) == 0:  # only dynamic features
             n_features = self._num_lazy_features()
             height, width = flas_cpp.get_optimal_grid_size(n_features, self.aspect_ratio, 2, 2)
 
             # features
-            features = [f for f, _ in self.lazy_features]
-            n_missing_features = height * width - n_features
-            if n_missing_features > 0:
-                padding_features = np.zeros((n_missing_features, self.dim), dtype=np.float32)
-                features = features + [padding_features]
-            features = np.concatenate(features)
-            features = features.reshape(height, width, self.dim)
+            features = np.concatenate([f for f, _ in self.lazy_features])
+            features = features.astype(np.float32)
 
             # ids
-            ids = [ids for _, ids in self.lazy_features]
-            if n_missing_features > 0:
-                padding_ids = np.full((n_missing_features,), -1, dtype=np.int32)
-                ids = ids + [padding_ids]
-            ids = np.concatenate(ids)
-            ids = ids.reshape(height, width)
-            ids = ids.astype(np.int32)
+            n_missing_features = height * width - n_features
+            ids = np.concatenate([np.arange(n_features), np.full(n_missing_features, -1)])
+            ids = ids.reshape(height, width).astype(np.int32)
 
             # frozen
             frozen = np.zeros((height, width), dtype=np.bool)
 
-            return features, ids, frozen
+            # labels
+            labels = np.concatenate([labels for _, labels in self.lazy_features])
+            labels = labels.astype(np.int32)
+
+            return Grid(features, ids, frozen, labels)
         else:
-            num_static_features = np.sum(self.grid_ids != -1)
+            print('grid_labels:')
+            print(self.grid_labels)
+            num_static_features = np.sum(self.grid_labels != -1)
             num_lazy_features = self._num_lazy_features()
             total_num_features = num_static_features + num_lazy_features
+            print('total_num_features:', total_num_features)
 
-            # get width / height to fit all lazy features
+            if total_num_features == 0:
+                raise ValueError('building empty grid')
+
+            # get dimensions to fit all lazy features
             height, width = flas_cpp.get_optimal_grid_size(
-                total_num_features, self.aspect_ratio, *self.grid_ids.shape
+                total_num_features, self.aspect_ratio, *self.grid_labels.shape
             )
 
-            # scale grids to new size
-            new_grid = _embed_array(self.grid_features, (height, width))
-            new_grid_ids = _embed_array(self.grid_ids, (height, width), fill_value=-1)
-            new_frozen = _embed_array(self.frozen, (height, width))
-
-            # apply lazy features
+            # features
+            static_indices = np.nonzero(self.grid_labels != -1)
+            features = self.grid_features[static_indices]
             if self.lazy_features:
-                features = [f for f, _ in self.lazy_features]
-                ids = [ids for _, ids in self.lazy_features]
-                free_indices = np.where(new_grid_ids == -1)
-                free_indices = tuple(fi[:num_lazy_features] for fi in free_indices)
-                new_grid[free_indices] = np.concatenate(features)
-                new_grid_ids[free_indices] = np.concatenate(ids)
+                features = [features] + [f for f, _ in self.lazy_features]
+                features = np.concatenate(features)
 
-            new_grid_ids = new_grid_ids.astype(np.int32)
+            # ids
+            ids = np.full((height, width), -1, dtype=np.int32)
+            ids[static_indices] = np.arange(num_static_features)
+            if self.lazy_features:
+                dynamic_indices = np.nonzero(ids == -1)
+                dynamic_indices = tuple(fi[:num_lazy_features] for fi in dynamic_indices)
+                ids[dynamic_indices] = np.arange(num_static_features, total_num_features)
 
-            return new_grid, new_grid_ids, new_frozen
+            # labels
+            labels = self.grid_labels[static_indices]
+            if self.lazy_features:
+                labels = [labels] + [l for _, l in self.lazy_features]
+                labels = np.concatenate(labels)
+            labels = labels.astype(np.uint32)
+
+            # frozen
+            frozen = _embed_array(self.frozen, (height, width))
+
+            return Grid(features, ids, frozen, labels)
 
     def _check_newdim(self, new_dim):
-        if self.dim is None:
+        if self.dim == 0:
             self.dim = new_dim
             if self.size is not None:
                 self._init_grids()
@@ -237,27 +308,27 @@ class Grid:
         self.size = new_size
         if self.grid_features is not None:
             self.grid_features = _embed_array(self.grid_features, self.size)
-            self.grid_ids = _embed_array(self.grid_ids, self.size, fill_value=-1)
+            self.grid_labels = _embed_array(self.grid_labels, self.size, fill_value=-1)
             self.frozen = _embed_array(self.frozen, self.size)
-        elif self.dim is not None:
+        elif self.dim != 0:
             self._init_grids()
 
     def _init_grids(self):
         self.grid_features = np.zeros((*self.size, self.dim), dtype=np.float32)
-        self.grid_ids = np.full(self.size, -1, dtype=np.bool)
+        self.grid_labels = np.full(self.size, -1, dtype=np.int32)
         self.frozen = np.zeros(self.size, dtype=np.bool)
 
     def _num_lazy_features(self) -> int:
         return sum(f.shape[0] for f, _ in self.lazy_features)
 
 
-def flas(features: Grid | np.ndarray, wrap: bool = False, radius_decay: float = 0.93, max_swap_positions: int = 9,
+def flas(grid: Grid | np.ndarray, wrap: bool = False, radius_decay: float = 0.93, max_swap_positions: int = 9,
          weight_swappable: float = 1.0, weight_non_swappable: float = 100.0, weight_hole: float = 0.01) -> np.ndarray:
     """
     Sorts the given features into a 2d plane, so that similar features are close together.
     See https://github.com/Visual-Computing/LAS_FLAS for details.
 
-    :param features: A numpy array with shape (height, width, dims) of type float32 (otherwise it will be cast).
+    :param grid: A numpy array with shape (height, width, dims) of type float32 (otherwise it will be cast).
     :param wrap: If True, the features on the right side will be similar to features on the left side as well as
                  features on top of the plane will be similar to features on the bottom.
     :param radius_decay: How much should the filter radius decay at each iteration.
@@ -268,29 +339,21 @@ def flas(features: Grid | np.ndarray, wrap: bool = False, radius_decay: float = 
     :return: a 2d numpy array with shape (height, width). The cell at (y, x) contains the index of the feature that
              should be at (y, x). Indices are in scanline order.
     """
-    if isinstance(features, Grid):
-        features, ids, frozen = features.compile()
-    elif isinstance(features, np.ndarray):
-        if features.dtype != np.float32:
-            features = features.astype(np.float32)
-        if features.ndim == 3:
-            ids = np.ones(features.shape[:2], dtype=np.bool)
-            frozen = np.zeros(features.shape[:2], dtype=np.bool)
-        elif features.ndim == 2:  # 1d features case
-            grid = Grid.from_data(features, np.arange(features.shape[0]))
-            features, ids, frozen = grid.compile()
-        else:
-            raise ValueError('features must have shape (h, w, d) or (n, d) but got: {}'.format(features.shape))
+    if isinstance(grid, Grid):
+        pass
+    elif isinstance(grid, np.ndarray):
+        if grid.dtype != np.float32:
+            grid = grid.astype(np.float32)
+        grid = Grid.from_data(grid)
     else:
-        raise TypeError('features must be a Grid or a numpy array but got: {}'.format(type(features)))
+        raise TypeError('features must be a Grid or a numpy array but got: {}'.format(type(grid)))
 
-    # TODO: this is wrong, when using ids
-    if np.all(frozen):
-        # if all features are frozen, we return identity sorting.
-        return np.arange(np.prod(features.shape[:2])).reshape(features.shape[:2])
+    # TODO: return identity sorting
+    if np.all(grid.frozen):
+        raise ValueError('All features are frozen. Cannot sort features.')
 
-    code, result = flas_cpp.flas_2d_features(
-        features, ids, frozen, wrap, radius_decay, weight_swappable, weight_non_swappable, weight_hole,
+    code, result = flas_cpp.flas(
+        grid.features, grid.ids, grid.frozen, wrap, radius_decay, weight_swappable, weight_non_swappable, weight_hole,
         max_swap_positions
     )
 

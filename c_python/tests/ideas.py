@@ -1,6 +1,6 @@
 import numpy as np
 
-from flas import flas, Grid
+from flas import flas, GridBuilder
 
 
 HEIGHT, WIDTH, DIM = 13, 13, 3
@@ -21,7 +21,7 @@ def main():
 
 def use_grid():
     # create a grid
-    grid = Grid()  # grid with scalable size
-    grid = Grid.with_size(HEIGHT, WIDTH)  #
-    grid = Grid.from_data(np.random.random((HEIGHT, WIDTH, DIM)))
-    grid = Grid.from_data(np.random.random((N_SAMPLES, DIM)))
+    grid = GridBuilder()  # grid with scalable size
+    grid = GridBuilder.with_size(HEIGHT, WIDTH)  #
+    grid = GridBuilder.from_data(np.random.random((HEIGHT, WIDTH, DIM)))
+    grid = GridBuilder.from_data(np.random.random((N_SAMPLES, DIM)))
