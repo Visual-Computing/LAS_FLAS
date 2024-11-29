@@ -6,7 +6,7 @@ from flas import flas, apply_sorting, GridBuilder, Grid
 
 N_ALL_FEATURES = 10000
 HEIGHT, WIDTH = 64, 64
-QUERY_SIZE = HEIGHT * WIDTH
+QUERY_SIZE = HEIGHT * WIDTH - 5
 DIM = 3
 
 
@@ -15,10 +15,10 @@ def test_2d():
     rng = np.random.default_rng()
     query_labels = rng.choice(a=N_ALL_FEATURES, size=QUERY_SIZE, replace=False, shuffle=False)
 
+    all_features[query_labels[0]] = np.array([1, 1, 1])
     query_features = all_features[query_labels]
-    query_features[0] = np.array([1, 0, 0])
 
-    grid_builder = GridBuilder(aspect_ratio=2.0)
+    grid_builder = GridBuilder(aspect_ratio=1.0)
     grid_builder.put(
         query_features[0],
         (32, 32),
@@ -29,17 +29,9 @@ def test_2d():
         labels=query_labels[1:]
     )
 
-    grid = grid_builder.build()
-    print('ids:')
-    print(grid.ids.shape)
-    print(grid.ids)
+    arrangement = flas(grid_builder.build(freeze_holes=True), wrap=False, radius_decay=0.93)
 
-    sorting = flas(grid, wrap=False, radius_decay=0.99)
-    print('sorting:')
-    print(sorting)
-
-    sorted_features = apply_sorting(query_features, sorting)
-    # print(sorted_features, sorted_features.dtype, sorted_features.shape)
+    sorted_features = arrangement.get_sorted_features()
 
     image = Image.fromarray((sorted_features[:, :, :3] * 255).astype(np.uint8))
     image.save('images/image1.png', 'PNG')
