@@ -4,44 +4,41 @@ from PIL import Image
 import numpy as np
 from flas import flas, apply_sorting, GridBuilder, Grid
 
-N_ALL_FEATURES = 100
-QUERY_SIZE = 25
+N_ALL_FEATURES = 10000
 HEIGHT, WIDTH = 64, 64
+QUERY_SIZE = HEIGHT * WIDTH
 DIM = 3
 
 
 def test_2d():
     all_features = np.random.random((N_ALL_FEATURES, DIM)).astype(np.float32)
     rng = np.random.default_rng()
-    # query_labels = rng.choice(a=N_ALL_FEATURES, size=QUERY_SIZE, replace=False, shuffle=False)
+    query_labels = rng.choice(a=N_ALL_FEATURES, size=QUERY_SIZE, replace=False, shuffle=False)
 
-    # query_features = all_features[query_labels]
+    query_features = all_features[query_labels]
+    query_features[0] = np.array([1, 0, 0])
 
-    # grid_builder = GridBuilder(aspect_ratio=1.0)
-    # grid_builder.put(
-    #     query_features[0],
-    #     (1, 1),
-    #     query_labels[0],
-    # )
-    # grid_builder.add(
-    #     features=query_features[1:],
-    #     labels=query_labels[1:]
-    # )
+    grid_builder = GridBuilder(aspect_ratio=2.0)
+    grid_builder.put(
+        query_features[0],
+        (32, 32),
+        query_labels[0],
+    )
+    grid_builder.add(
+        features=query_features[1:],
+        labels=query_labels[1:]
+    )
 
-    # grid = grid_builder.build()
-    # print('ids:')
-    # print(grid.ids.shape)
-    # print(grid.ids)
+    grid = grid_builder.build()
+    print('ids:')
+    print(grid.ids.shape)
+    print(grid.ids)
 
-    features = np.random.random((HEIGHT * WIDTH, DIM))
-    grid = Grid.from_data(features, aspect_ratio=16 / 9, freeze_holes=True)
-    print(grid.frozen)
-
-    sorting = flas(grid, wrap=True)
+    sorting = flas(grid, wrap=False, radius_decay=0.99)
     print('sorting:')
     print(sorting)
 
-    sorted_features = apply_sorting(features, sorting)
+    sorted_features = apply_sorting(query_features, sorting)
     # print(sorted_features, sorted_features.dtype, sorted_features.shape)
 
     image = Image.fromarray((sorted_features[:, :, :3] * 255).astype(np.uint8))

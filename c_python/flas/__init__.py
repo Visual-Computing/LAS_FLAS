@@ -117,8 +117,6 @@ class GridBuilder:
         if features.ndim == 1:
             features = features.reshape(1, -1)
 
-        print('add n:', features.shape[0])
-
         if features.ndim != 2:
             raise ValueError('features must have shape (n, d) but got: {}'.format(features.shape))
 
@@ -152,7 +150,6 @@ class GridBuilder:
 
         features = features.reshape(-1, self.dim)
         n_features = features.shape[0]
-        print('put n:', n_features)
 
         # check pos
         if isinstance(pos, tuple):
@@ -217,7 +214,7 @@ class GridBuilder:
 
         return self.grid_labels[pos]
 
-    def build(self) -> Grid:
+    def build(self, freeze_holes: bool = True) -> Grid:
         """
         Builds a grid consisting of three numpy arrays, which can be used for the flas algorithm.
 
@@ -228,6 +225,7 @@ class GridBuilder:
                  number is the id of the feature.
                  frozen is a boolean numpy array with shape (h, w), where True indicates that the feature is frozen
                  (should not be moved).
+        :param freeze_holes: If True, holes are frozen.
         """
         if self.grid_labels is None or np.sum(self.grid_labels != -1) == 0:  # only dynamic features
             n_features = self._num_lazy_features()
@@ -243,7 +241,10 @@ class GridBuilder:
             ids = ids.reshape(height, width).astype(np.int32)
 
             # frozen
-            frozen = np.zeros((height, width), dtype=np.bool)
+            frozen = np.zeros((height * width), dtype=np.bool)
+            if freeze_holes:
+                frozen[n_features:] = freeze_holes
+            frozen = frozen.reshape(height, width)
 
             # labels
             labels = np.concatenate([labels for _, labels in self.lazy_features])
@@ -251,12 +252,9 @@ class GridBuilder:
 
             return Grid(features, ids, frozen, labels)
         else:
-            print('grid_labels:')
-            print(self.grid_labels)
             num_static_features = np.sum(self.grid_labels != -1)
             num_lazy_features = self._num_lazy_features()
             total_num_features = num_static_features + num_lazy_features
-            print('total_num_features:', total_num_features)
 
             if total_num_features == 0:
                 raise ValueError('building empty grid')
@@ -290,6 +288,9 @@ class GridBuilder:
 
             # frozen
             frozen = _embed_array(self.frozen, (height, width))
+            if freeze_holes:
+                hole_indices = np.nonzero(ids == -1)
+                frozen[hole_indices] = True
 
             return Grid(features, ids, frozen, labels)
 
