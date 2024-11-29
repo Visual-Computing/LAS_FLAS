@@ -16,4 +16,6 @@ void init_map_place(MapPlace *map_place, int id, const float *feature, bool is_s
 
 void init_invalid_map_place(MapPlace *map_place, const bool is_swappable);
 
+int get_num_swappable(const MapPlace *map_places, const int num_map_places);
+
 #endif //MAP_PLACE_H

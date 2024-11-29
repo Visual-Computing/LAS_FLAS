@@ -15,3 +15,13 @@ void init_invalid_map_place(MapPlace *map_place, const bool is_swappable) {
   map_place->feature = nullptr;
   map_place->is_swappable = is_swappable;
 }
+
+int get_num_swappable(const MapPlace *map_places, const int num_map_places) {
+  int num_swappable = 0;
+  for (int i = 0; i < num_map_places; i++) {
+    if (map_places[i].is_swappable) {
+      num_swappable++;
+    }
+  }
+  return num_swappable;
+}

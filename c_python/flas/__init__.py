@@ -39,6 +39,9 @@ class Grid:
         self.frozen = frozen
         self.labels = labels
 
+    def get_size(self) -> Tuple[int, int]:
+        return self.ids.shape
+
     @classmethod
     def from_data(cls, features: np.ndarray, aspect_ratio: float = 1.0, freeze_holes: bool = True):
         """
@@ -446,6 +449,10 @@ def flas(grid: Grid | np.ndarray, wrap: bool = False, radius_decay: float = 0.93
         grid = Grid.from_data(grid)
     else:
         raise TypeError('features must be a Grid or a numpy array but got: {}'.format(type(grid)))
+
+    size = grid.get_size()
+    if size[0] < 2 or size[1] < 2:
+        raise ValueError('Grid must have at least two features per dimension, but got: {}'.format(size))
 
     # TODO: return identity sorting
     if np.all(grid.frozen):
