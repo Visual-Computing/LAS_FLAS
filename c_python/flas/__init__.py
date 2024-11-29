@@ -31,7 +31,7 @@ class Grid:
             raise ValueError('ids must have dtype int32 but got: {}'.format(ids.dtype))
         if frozen.dtype != np.bool:
             raise ValueError('frozen must have dtype bool but got: {}'.format(frozen.dtype))
-        if np.isdtype(labels.dtype, 'integral'):
+        if not np.isdtype(labels.dtype, 'integral'):
             raise ValueError('labels must have integer dtype but got: {}'.format(labels.dtype))
 
         self.features = features
@@ -55,13 +55,13 @@ class Grid:
             features = features.astype(np.float32)
 
         if features.ndim == 3:
-            height, width, dim = features.shape()
+            height, width, dim = features.shape
             n = height * width
             return Grid(
                 features=features.reshape(n, dim),
-                ids=np.arange(n, dtype=np.np.int32).reshape(height, width),
+                ids=np.arange(n, dtype=np.int32).reshape(height, width),
                 frozen=np.zeros((height, width), dtype=np.bool),
-                labels=np.arange(n, dtype=np.np.uint32),
+                labels=np.arange(n, dtype=np.uint32),
             )
         elif features.ndim == 2:  # 1d features case
             n, dim = features.shape
@@ -69,7 +69,7 @@ class Grid:
 
             # ids
             ids = np.full(height * width, -1, dtype=np.int32)
-            ids[:n] = np.arange(n, dtype=np.np.int32)
+            ids[:n] = np.arange(n, dtype=np.int32)
 
             # frozen
             frozen = np.zeros((height, width), dtype=np.bool)
@@ -80,7 +80,7 @@ class Grid:
                 features=features,
                 ids=ids.reshape(height, width),
                 frozen=frozen,
-                labels=np.arange(n, dtype=np.np.uint32),
+                labels=np.arange(n, dtype=np.uint32),
             )
         else:
             raise ValueError('features must have shape (h, w, d) or (n, d) but got: {}'.format(features.shape))
@@ -116,6 +116,8 @@ class GridBuilder:
         if features.ndim == 1:
             features = features.reshape(1, -1)
 
+        print('add n:', features.shape[0])
+
         if features.ndim != 2:
             raise ValueError('features must have shape (n, d) but got: {}'.format(features.shape))
 
@@ -149,6 +151,7 @@ class GridBuilder:
 
         features = features.reshape(-1, self.dim)
         n_features = features.shape[0]
+        print('put n:', n_features)
 
         # check pos
         if isinstance(pos, tuple):
@@ -247,9 +250,12 @@ class GridBuilder:
 
             return Grid(features, ids, frozen, labels)
         else:
+            print('grid_labels:')
+            print(self.grid_labels)
             num_static_features = np.sum(self.grid_labels != -1)
             num_lazy_features = self._num_lazy_features()
             total_num_features = num_static_features + num_lazy_features
+            print('total_num_features:', total_num_features)
 
             if total_num_features == 0:
                 raise ValueError('building empty grid')
@@ -302,14 +308,14 @@ class GridBuilder:
         self.size = new_size
         if self.grid_features is not None:
             self.grid_features = _embed_array(self.grid_features, self.size)
-            self.grid_ids = _embed_array(self.grid_ids, self.size, fill_value=-1)
+            self.grid_labels = _embed_array(self.grid_labels, self.size, fill_value=-1)
             self.frozen = _embed_array(self.frozen, self.size)
         elif self.dim != 0:
             self._init_grids()
 
     def _init_grids(self):
         self.grid_features = np.zeros((*self.size, self.dim), dtype=np.float32)
-        self.grid_ids = np.full(self.size, -1, dtype=np.bool)
+        self.grid_labels = np.full(self.size, -1, dtype=np.int32)
         self.frozen = np.zeros(self.size, dtype=np.bool)
 
     def _num_lazy_features(self) -> int:
@@ -346,7 +352,7 @@ def flas(grid: Grid | np.ndarray, wrap: bool = False, radius_decay: float = 0.93
     if np.all(grid.frozen):
         raise ValueError('All features are frozen. Cannot sort features.')
 
-    code, result = flas_cpp.flas_2d_features(
+    code, result = flas_cpp.flas(
         grid.features, grid.ids, grid.frozen, wrap, radius_decay, weight_swappable, weight_non_swappable, weight_hole,
         max_swap_positions
     )

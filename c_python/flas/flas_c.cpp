@@ -7,37 +7,42 @@
 
 namespace py = pybind11;
 
-std::tuple<int, py::array_t<int32_t> > flas_2d_features(
+std::tuple<int, py::array_t<int32_t> > flas(
   const py::array_t<float, py::array::c_style> &features,
   const py::array_t<int32_t, py::array::c_style> &ids,
   const py::array_t<bool, py::array::c_style> &frozen,
   const bool wrap, float radius_decay, float weight_swappable, float weight_non_swappable, float weight_hole,
   int max_swap_positions
 ) {
-  // features
-  const py::buffer_info features_info = features.request();
-  const ssize_t height = features_info.shape[0];
-  const ssize_t width = features_info.shape[1];
-  const ssize_t dim = features_info.shape[2];
-
-  const py::array_t<int32_t> result_indices({height, width});
-  const py::buffer_info result_indices_info = result_indices.request();
-
-  if (features_info.ndim != 3)
-    return std::make_tuple(1, result_indices);
-
   // ids
   const py::buffer_info ids_info = ids.request();
-  if (ids_info.ndim != 2)
-    return std::make_tuple(3, result_indices);
+  if (ids_info.ndim != 2) {
+    const py::array_t<int32_t> tmp({1});
+    return std::make_tuple(1, tmp);
+  }
+  const ssize_t height = ids_info.shape[0];
+  const ssize_t width = ids_info.shape[1];
 
-  if (ids_info.shape[0] != height || ids_info.shape[1] != width)
-    return std::make_tuple(3, result_indices);
+  // features
+  const py::buffer_info features_info = features.request();
+  if (features_info.ndim != 2) {
+    const py::array_t<int32_t> tmp({1});
+    return std::make_tuple(2, tmp);
+  }
+  const ssize_t n_features = features_info.shape[0];
+  const ssize_t dim = features_info.shape[1];
 
   // frozen
   const py::buffer_info frozen_info = frozen.request();
-  if (frozen_info.ndim != 2)
+  if (frozen_info.ndim != 2) {
+    const py::array_t<int32_t> result_indices({1});
+    return std::make_tuple(3, result_indices);
+  }
+
+  if (frozen_info.shape[0] != height || frozen_info.shape[1] != width) {
+    const py::array_t<int32_t> result_indices({1});
     return std::make_tuple(4, result_indices);
+  }
 
   const GridMap grid_map = init_grid_map_with_ids(static_cast<int>(height), static_cast<int>(width), static_cast<int32_t*>(ids_info.ptr));
 
@@ -52,6 +57,9 @@ std::tuple<int, py::array_t<int32_t> > flas_2d_features(
     static_cast<const bool *>(frozen_info.ptr),
     &settings
   );
+
+  const py::array_t<int32_t> result_indices({height, width});
+  const py::buffer_info result_indices_info = result_indices.request();
 
   const auto res_ptr = static_cast<int32_t *>(result_indices_info.ptr);
 
@@ -100,6 +108,6 @@ std::tuple<uint32_t, uint32_t> get_optimal_grid_size(
 }
 
 PYBIND11_MODULE(flas_cpp, m) {
-  m.def("flas_2d_features", &flas_2d_features);
+  m.def("flas", &flas);
   m.def("get_optimal_grid_size", &get_optimal_grid_size);
 }
