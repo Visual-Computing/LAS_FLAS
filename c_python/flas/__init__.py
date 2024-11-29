@@ -68,7 +68,8 @@ class Grid:
             height, width = flas_cpp.get_optimal_grid_size(n, aspect_ratio, 2, 2)
 
             # ids
-            ids = np.full(height * width, -1, dtype=np.int32)
+            ids = np.empty(height * width, dtype=np.int32)
+            ids[n:] = -1
             ids[:n] = np.arange(n, dtype=np.int32)
 
             # frozen
@@ -324,8 +325,52 @@ class GridBuilder:
         return sum(f.shape[0] for f, _ in self.lazy_features)
 
 
+class Arrangement:
+    def __init__(self, grid: Grid, sorting: np.ndarray):
+        """
+        Creates a new arrangement.
+        :param grid: The grid that was sorted.
+        :param sorting: The sorting of the grid with shape (h, w).
+        """
+        if sorting.shape != grid.ids.shape[:2]:
+            raise ValueError('sorting must have shape {} but got: {}'.format(grid.ids, sorting.shape))
+
+        self.grid = grid
+        self.sorting = sorting
+
+    def get_size(self) -> Tuple[int, int]:
+        """
+        :returns: the size of the map as tuple (height, width).
+        """
+        return self.sorting.shape
+
+    def get_sorted_features(self, hole_value: float | np.ndarray = 0.0) -> np.ndarray:
+        """
+        Sort the features according to the given sorting. Holes are filled with the given hole_value.
+        :param hole_value: Scalar or numpy array with shape (d,) defining the value to fill holes with.
+        :return: A numpy array with shape (h, w, d) containing the sorted features.
+        """
+        dim = self.grid.features.shape[-1]
+        if np.isscalar(hole_value):
+            hole_value = np.full(dim, hole_value)
+        hole_value = hole_value.reshape(1, dim)
+
+        # add hole feature to end of features, so that sorting of -1 accesses this feature
+        features = np.concatenate([self.grid.features, hole_value])
+        return features[self.sorting.flatten()].reshape(*self.sorting.shape, dim)
+
+    def get_sorted_labels(self) -> np.ndarray:
+        """
+        Returns a numpy array with shape (h, w) containing the labels of the sorted features.
+        get_sorted_labels()[y, x] contains the label to the feature, that was moved to (y, x).
+        If get_sorted_labels()[y, x] == -1, there is a hole.
+        """
+        labels = np.concatenate([self.grid.labels, [-1]])
+        return labels[self.sorting.flatten()].reshape(self.sorting.shape)
+
+
 def flas(grid: Grid | np.ndarray, wrap: bool = False, radius_decay: float = 0.93, max_swap_positions: int = 9,
-         weight_swappable: float = 1.0, weight_non_swappable: float = 100.0, weight_hole: float = 0.01) -> np.ndarray:
+         weight_swappable: float = 1.0, weight_non_swappable: float = 100.0, weight_hole: float = 0.01) -> Arrangement:
     """
     Sorts the given features into a 2d plane, so that similar features are close together.
     See https://github.com/Visual-Computing/LAS_FLAS for details.
@@ -362,7 +407,7 @@ def flas(grid: Grid | np.ndarray, wrap: bool = False, radius_decay: float = 0.93
     if code != 0:
         raise RuntimeError('FLAS failed with error code {}'.format(code))
 
-    return result
+    return Arrangement(grid, result)
 
 
 def _embed_array(array: np.ndarray, new_size: Tuple[int, int], fill_value: Any = 0) -> np.ndarray:
