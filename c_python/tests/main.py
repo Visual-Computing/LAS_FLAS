@@ -51,6 +51,22 @@ def test_1d():
     image.save('images/image1.png', 'PNG')
 
 
+def create_grid_by_feature_list(n: int, dim: int, aspect_ratio: float = 1.0) -> Grid:
+    features = np.random.random((n, dim)).astype(np.float32)
+    return Grid.from_data(features, aspect_ratio=aspect_ratio)
+
+
+def do_something():
+    dim = 3
+    for n in [4, 7, 25, 51, 60*60-1, 60*60]:
+        for aspect_ratio in [1.0, 0.5, 2.0, 16 / 9]:
+            grid = create_grid_by_feature_list(n, dim, aspect_ratio)
+            print(n, aspect_ratio, grid.get_size())
+            flas(grid)
+            print('done')
+
+
 if __name__ == '__main__':
-    test_2d()
+    # test_2d()
     # test_1d()
+    do_something()
