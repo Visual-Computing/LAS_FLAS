@@ -33,8 +33,9 @@ def test_2d():
     # print(grid.ids.shape)
     # print(grid.ids)
 
-    features = np.random.random((HEIGHT, WIDTH, DIM))
-    grid = Grid.from_data(features)
+    features = np.random.random((HEIGHT * WIDTH, DIM))
+    grid = Grid.from_data(features, aspect_ratio=16 / 9, freeze_holes=True)
+    print(grid.frozen)
 
     sorting = flas(grid, wrap=True)
     print('sorting:')

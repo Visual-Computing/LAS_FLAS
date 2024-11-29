@@ -72,9 +72,10 @@ class Grid:
             ids[:n] = np.arange(n, dtype=np.int32)
 
             # frozen
-            frozen = np.zeros((height, width), dtype=np.bool)
+            frozen = np.zeros(height * width, dtype=np.bool)
             if freeze_holes:
                 frozen[n:] = True  # freeze holes
+            frozen = frozen.reshape(height, width)
 
             return Grid(
                 features=features,
