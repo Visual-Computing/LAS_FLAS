@@ -88,6 +88,48 @@ class Grid:
             raise ValueError('features must have shape (h, w, d) or (n, d) but got: {}'.format(features.shape))
 
 
+class Labeler:
+    def __init__(self):
+        self.next_label = 0
+
+    def get_labels(self, features_shape: Tuple[int, int] | Tuple[int, int, int]):
+        """
+        Get new labels for the given features.
+        :param features_shape: The shape of the features to create labels for. Either (h, w, d) or (n, d).
+        :return:
+        """
+        if len(features_shape) == 2:
+            n = features_shape[0]
+        elif len(features_shape) == 3:
+            n = features_shape[0] * features_shape[1]
+        else:
+            raise ValueError('features_shape must have shape (h, w, d) or (n, d) but got: {}'.format(features_shape))
+        result = np.arange(self.next_label, self.next_label + n, dtype=np.int32)
+        self.next_label += n
+        return result
+
+    def update(self, labels: int | np.ndarray):
+        """
+        Update internal state with labels from user.
+        :param labels: The labels of the user with
+        """
+        self.next_label = max(np.max(labels)+1, self.next_label)
+
+    def update_or_create(self, labels: int | np.ndarray | None, features_shape: Tuple[int, int] | Tuple[int, int, int]):
+        """
+        Creates new labels, if not given, and updates internal state with labels from user.
+
+        :param features_shape: The shape of the features to create labels for. Either (h, w, d) or (n, d).
+        :param labels: The labels of the user with
+        :return: The given labels if not None, otherwise the created labels for the given features.
+        """
+        if labels is None:
+            return self.get_labels(features_shape)
+        else:
+            self.update(labels)
+            return labels
+
+
 class GridBuilder:
     def __init__(
             self, size: Tuple[int, int] = (1, 1), aspect_ratio: float = 1.0, check_overwrite: bool = False, dim: int = 0
@@ -100,6 +142,7 @@ class GridBuilder:
         self.lazy_features: List[Tuple[np.ndarray, np.ndarray]] = []
         self.aspect_ratio = aspect_ratio
         self.check_overwrite = check_overwrite
+        self.labeler = Labeler()
 
     def __repr__(self):
         dim = self.dim
@@ -107,13 +150,15 @@ class GridBuilder:
             dim = 'unknown'
         return 'Grid(size={}, dim={})'.format(self.size, dim)
 
-    def add(self, features: np.ndarray, labels: int | np.ndarray):
+    def add(self, features: np.ndarray, labels: int | np.ndarray | None = None) -> np.ndarray:
         """
         Add the given features anywhere to the grid.
         :param features: numpy array with shape (d,) or (n, d), where d is the feature dimensionality and n is the
                          number of features.
         :param labels: integer or numpy array with shape (n,), where n is the number of features. Each label at
-                       labels[i] identifies one feature.
+                       labels[i] identifies one feature. If None labels are created automatically.
+        :returns: The labels of the added features. If given, the labels are returned. Otherwise, the labels are
+                  created.
         """
         if features.ndim == 1:
             features = features.reshape(1, -1)
@@ -121,21 +166,18 @@ class GridBuilder:
         if features.ndim != 2:
             raise ValueError('features must have shape (n, d) but got: {}'.format(features.shape))
 
-        if isinstance(labels, int):
-            labels = np.array([labels])
-        if features.shape[:-1] != labels.shape:
-            raise ValueError('features and labels must have same size. features.shape != labels.shape: {} != {}'.format(
-                features.shape, labels.shape))
-        if not np.isdtype(labels.dtype, 'integral'):
-            raise ValueError('labels must be an integer array but got: {}'.format(labels.dtype))
+        labels = self.labeler.update_or_create(labels, features.shape)
+        labels = self._check_valid_labels(features, labels)
 
         self._check_newdim(features.shape[-1])
         self.lazy_features.append((features, labels))
 
+        return labels
+
     def put(
             self, features: np.ndarray, pos: Tuple[int, int] | np.ndarray,
-            labels: int | np.ndarray, frozen: bool | np.ndarray = True
-    ):
+            labels: int | np.ndarray | None = None, frozen: bool | np.ndarray = True
+    ) -> np.ndarray:
         """
         Put the given features to the given position.
 
@@ -144,7 +186,7 @@ class GridBuilder:
         :param pos: tuple (y, x) or numpy array with shape (n, 2) or (2,), where n is the number of positions to put
                     the features to. Should have the same n as features.
         :param labels: integer or numpy array with shape (n,), where n is the number of features. Each labels at
-                       labels[i] identifies feature[i].
+                       labels[i] identifies feature[i]. If None labels are created automatically.
         :param frozen: bool or numpy array with shape (n,), defining whether the given features should be frozen.
         """
         self._check_newdim(features.shape[-1])
@@ -166,14 +208,9 @@ class GridBuilder:
         if frozen.shape != (n_features,):
             raise ValueError('frozen must have shape (n,) but got: {}'.format(frozen.shape))
 
-        # check ids
-        if np.isscalar(labels):
-            labels = np.array([labels])
-        if features.shape[:-1] != labels.shape:
-            raise ValueError('features and labels must have same size. features.shape != labels.shape: {} != {}'.format(
-                features.shape, labels.shape))
-        if not np.isdtype(labels.dtype, 'integral'):
-            raise ValueError('ids must be an integer array but got: {}'.format(labels.dtype))
+        # check labels
+        labels = self.labeler.update_or_create(labels, features.shape)
+        labels = self._check_valid_labels(features, labels)
 
         # resize grid
         new_size = np.max(pos, axis=0) + 1
@@ -190,6 +227,21 @@ class GridBuilder:
         self.grid_labels[tuple(pos.T)] = labels
         self.grid_features[tuple(pos.T)] = features
         self.frozen[tuple(pos.T)] = frozen
+
+        return labels
+
+    @classmethod
+    def _check_valid_labels(cls, features, labels):
+        if np.isscalar(labels):
+            labels = np.array([labels])
+        if features.shape[:-1] != labels.shape:
+            raise ValueError('features and labels must have same size. features.shape != labels.shape: {} != {}'.format(
+                features.shape, labels.shape))
+        if not np.isdtype(labels.dtype, 'integral'):
+            raise ValueError('ids must be an integer array but got: {}'.format(labels.dtype))
+        if np.any(labels < 0):
+            raise ValueError('labels must be >= 0 but got label {}'.format(np.min(labels)))
+        return labels
 
     def get_features(self, pos: Tuple[int, int] | np.ndarray) -> np.ndarray:
         """
@@ -222,8 +274,8 @@ class GridBuilder:
         A grid consists of three numpy arrays: (features, labels, frozen).
                  features is a numpy array with shape (h, w, d), where d is the feature dimensionality and h and w are
                  height and width of the feature plane.
-                 labels is an int numpy array with shape (h, w), where -1 indicates that the feature is a hole. Any other
-                 number is the id of the feature.
+                 labels is an int numpy array with shape (h, w), where -1 indicates that the feature is a hole.
+                 Any other number is the id of the feature.
                  frozen is a boolean numpy array with shape (h, w), where True indicates that the feature is frozen
                  (should not be moved).
         :param freeze_holes: If True, holes are frozen.
