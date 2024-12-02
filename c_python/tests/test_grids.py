@@ -5,7 +5,7 @@ from flas import Grid, GridBuilder, flas
 
 def create_grid_by_feature_list(n: int, dim: int, aspect_ratio: float = 1.0) -> Grid:
     features = np.random.random((n, dim)).astype(np.float32)
-    return Grid.from_data(features, aspect_ratio=aspect_ratio)
+    return Grid.from_features(features, aspect_ratio=aspect_ratio)
 
 
 def test_grid_creations_list():
@@ -13,15 +13,13 @@ def test_grid_creations_list():
     # for n in [4, 7, 25, 51, 60*60-1, 60*60]:
     for n in [4, 7, 25, 51, 60*60-1, 60*60]:
         for aspect_ratio in [1.0, 0.5, 2.0, 16 / 9]:
-            with open('log.txt', 'a') as f:
-                f.write(f'n={n} aspect_ratio={aspect_ratio}\n')
             grid = create_grid_by_feature_list(n, dim, aspect_ratio)
             flas(grid)
 
 
 def create_grid_by_feature_map(height: int, width: int, dim: int) -> Grid:
     features = np.random.random((height, width, dim)).astype(np.float32)
-    return Grid.from_data(features)
+    return Grid.from_grid_features(features)
 
 
 def test_grid_creations_map():
