@@ -10,7 +10,7 @@
 
 #include <cstring>
 
-#include "det_random.hpp"
+#include "flas_adapter.hpp"
 
 constexpr int QUANT = 256;
 
@@ -85,6 +85,11 @@ typedef struct {
    * Distance matrix with size [num_swap_positions * num_swap_positions].
    */
   float *dist_lut_f;
+
+  /**
+   * RandomEngine for pseudo random number generation.
+   */
+  RandomEngine* rng;
 } InternalData;
 
 int min(const int a, const int b) {
@@ -95,7 +100,7 @@ int max(const int a, const int b) {
   return a > b ? a : b;
 }
 
-InternalData create_internal_data(MapField *map_fields, int columns, int rows, int dim, int max_swap_positions) {
+InternalData create_internal_data(MapField *map_fields, int columns, int rows, int dim, int max_swap_positions, RandomEngine* rng) {
   InternalData data;
 
   data.columns = columns;
@@ -156,6 +161,9 @@ InternalData create_internal_data(MapField *map_fields, int columns, int rows, i
     std::cerr << "Failed to allocate dist_lut_f.\n" << std::endl;
     exit(1);
   }
+
+  data.rng = rng;
+
   return data;
 }
 
@@ -196,8 +204,10 @@ FlasSettings default_settings() {
  * @param rows Number of rows in the grid to sort
  * @param settings The settings of the sorting algorithm
  */
-void do_sorting_full(MapField *map_fields, int dim, int columns, int rows, const FlasSettings *settings) {
-  const InternalData data = create_internal_data(map_fields, columns, rows, dim, settings->max_swap_positions);
+void do_sorting_full(
+  MapField *map_fields, int dim, int columns, int rows, const FlasSettings *settings, RandomEngine* rng
+) {
+  const InternalData data = create_internal_data(map_fields, columns, rows, dim, settings->max_swap_positions, rng);
 
   // set up the initial radius
   float rad = static_cast<float>(max(columns, rows)) * settings->initial_radius_factor;
@@ -283,10 +293,13 @@ void filter_weighted_som(
   }
 }
 
-void shuffle_array(int *array, int size) {
+void shuffle_array(int *array, int size, RandomEngine* rng) {
   for (int i = size - 1; i > 0; i--) {
-    int index = det_next_int(i + 1);
+    // int index = det_next_int(i + 1);
     // int index = rand() % (i+1);
+    std::uniform_int_distribution<uint32_t> index_dist(0, i);
+    const unsigned int index = index_dist(*rng);
+
     int temp = array[index];
     array[index] = array[i];
     array[i] = temp;
@@ -294,15 +307,19 @@ void shuffle_array(int *array, int size) {
 }
 
 int find_swap_positions_wrap(const InternalData *data, const int *swap_indices, const int num_swap_indices) {
-  int start_index = (num_swap_indices - data->num_swap_positions > 0) ?
-                      det_next_int(num_swap_indices - data->num_swap_positions)
+  std::uniform_int_distribution<uint32_t> index_dist(0, num_swap_indices - data->num_swap_positions - 1);
+  unsigned int start_index = (num_swap_indices - data->num_swap_positions > 0) ?
+                      // det_next_int(num_swap_indices - data->num_swap_positions)
                       // rand() % (num_swap_indices - data->num_swap_positions)
+                      index_dist(*data->rng)
                       : 0;
-  int pos0 = det_next_int(data->grid_size);
+  std::uniform_int_distribution<int32_t> pos_dist(0, data->grid_size - 1);
+  // int pos0 = det_next_int(data->grid_size);
   // int pos0 = rand() % (data->rows * data->columns);
+  const int pos0 = pos_dist(*data->rng);
 
   int swap_pos = 0;
-  for (int j = start_index; j < num_swap_indices && swap_pos < data->num_swap_positions; j++) {
+  for (unsigned int j = start_index; j < num_swap_indices && swap_pos < data->num_swap_positions; j++) {
     int d = pos0 + swap_indices[j];
     int x = d % data->columns;
     int y = (d / data->columns) % data->rows;
@@ -374,8 +391,11 @@ void do_swaps(const InternalData *data, int num_swaps) {
 int find_swap_positions(const InternalData *data, const int *swap_indices, int num_swap_indices, int swap_area_width,
                          int swap_area_height) {
   // calculate start position of swap area
-  int pos0 = det_next_int(data->grid_size);
+  // int pos0 = det_next_int(data->grid_size);
   // int pos0 = rand() % (data->rows * data->columns);
+
+  std::uniform_int_distribution pos_dist(0, data->grid_size - 1);
+  int pos0 = pos_dist(*data->rng);
   int x0 = pos0 % data->columns;
   int y0 = pos0 / data->columns;
 
@@ -386,9 +406,11 @@ int find_swap_positions(const InternalData *data, const int *swap_indices, int n
   if (y_start + swap_area_height > data->rows)
     y_start = data->rows - swap_area_height;
 
+  std::uniform_int_distribution index_dist(0, num_swap_indices - data->num_swap_positions - 1);
   int start_index = num_swap_indices - data->num_swap_positions > 0 ?
-                     det_next_int(num_swap_indices - data->num_swap_positions)
+                     // det_next_int(num_swap_indices - data->num_swap_positions)
                      // rand() % (num_swap_indices - data->num_swap_positions)
+                     index_dist(*data->rng)
                      : 0;
   int num_swap_positions = 0;
   for (int j = start_index; j < num_swap_indices && num_swap_positions < data->num_swap_positions; j++) {
@@ -429,7 +451,7 @@ void check_random_swaps(const InternalData *data, int radius, float sample_facto
   for (int y = 0; y < swap_area_height; y++)
     for (int x = 0; x < swap_area_width; x++)
       swap_indices[i++] = y * data->columns + x;
-  shuffle_array(swap_indices, num_swap_indices);
+  shuffle_array(swap_indices, num_swap_indices, data->rng);
 
   int num_swap_tries = max(1, static_cast<int>(sample_factor) * data->grid_size / data->num_swap_positions);
   if (do_wrap) {

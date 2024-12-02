@@ -8,7 +8,10 @@
 
 #include <iostream>
 
-void arrange_with_holes(const float *features, const int dim, const GridMap *map, const bool *frozen, const FlasSettings* settings) {
+void arrange_with_holes(
+  const float *features, const int dim, const GridMap *map, const bool *frozen, const FlasSettings* settings,
+  RandomEngine *rng
+) {
   int rows = map->rows;
   int columns = map->columns;
 
@@ -33,7 +36,7 @@ void arrange_with_holes(const float *features, const int dim, const GridMap *map
   }
 
   // Sort the map
-  do_sorting_full(map_fields, dim, columns, rows, settings);
+  do_sorting_full(map_fields, dim, columns, rows, settings, rng);
 
   // apply the new order to the map
   for (int y = 0; y < rows; y++) {

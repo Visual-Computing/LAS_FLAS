@@ -15,8 +15,6 @@ set(LIBRARY_SOURCES
 	ext/det_random.hpp
 	ext/fast_linear_assignment_sorter.cpp
 	ext/fast_linear_assignment_sorter.hpp
-	ext/feature_data.cpp
-	ext/feature_data.hpp
 	ext/flas_adapter.cpp
 	ext/flas_adapter.hpp
 	ext/grid_map.cpp

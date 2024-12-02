@@ -6,7 +6,11 @@
 #ifndef FAST_LINEAR_ASSIGNMENT_SORTER_H
 #define FAST_LINEAR_ASSIGNMENT_SORTER_H
 
+#include <random>
+
 #include "map_field.hpp"
+
+typedef std::mt19937 RandomEngine;
 
 class FlasSettings {
 public:
@@ -37,6 +41,6 @@ public:
 };
 
 FlasSettings default_settings();
-void do_sorting_full(MapField *map_fields, int dim, int columns, int rows, const FlasSettings *settings);
+void do_sorting_full(MapField *map_fields, int dim, int columns, int rows, const FlasSettings *settings, RandomEngine *rng);
 
 #endif //FAST_LINEAR_ASSIGNMENT_SORTER_H
