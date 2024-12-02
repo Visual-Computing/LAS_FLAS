@@ -9,6 +9,9 @@
 #include "fast_linear_assignment_sorter.hpp"
 #include "grid_map.hpp"
 
-void arrange_with_holes(const float *features, int dim, const GridMap *map, const bool *frozen, const FlasSettings* settings);
+void arrange_with_holes(
+  const float *features, int dim, const GridMap *map, const bool *frozen, const FlasSettings* settings,
+  RandomEngine *rng
+);
 
 #endif //FLAS_ADAPTER_H

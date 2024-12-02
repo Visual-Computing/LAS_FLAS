@@ -492,7 +492,8 @@ class Arrangement:
 
 
 def flas(grid: Grid | np.ndarray, wrap: bool = False, radius_decay: float = 0.93, max_swap_positions: int = 9,
-         weight_swappable: float = 1.0, weight_non_swappable: float = 100.0, weight_hole: float = 0.01) -> Arrangement:
+         weight_swappable: float = 1.0, weight_non_swappable: float = 100.0, weight_hole: float = 0.01,
+         seed: int = -1) -> Arrangement:
     """
     Sorts the given features into a 2d plane, so that similar features are close together.
     See https://github.com/Visual-Computing/LAS_FLAS for details.
@@ -505,6 +506,7 @@ def flas(grid: Grid | np.ndarray, wrap: bool = False, radius_decay: float = 0.93
     :param weight_swappable:
     :param weight_non_swappable:
     :param weight_hole:
+    :param seed: The random seed to initialize pseudo random numbers. If -1, the seed is not initialized.
     :return: a 2d numpy array with shape (height, width). The cell at (y, x) contains the index of the feature that
              should be at (y, x). Indices are in scanline order.
     """
@@ -530,7 +532,7 @@ def flas(grid: Grid | np.ndarray, wrap: bool = False, radius_decay: float = 0.93
 
     code, result = flas_cpp.flas(
         grid.features, grid.ids, grid.frozen, wrap, radius_decay, weight_swappable, weight_non_swappable, weight_hole,
-        max_swap_positions
+        max_swap_positions, seed
     )
 
     if code != 0:

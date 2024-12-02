@@ -12,7 +12,7 @@ std::tuple<int, py::array_t<int32_t> > flas(
   const py::array_t<int32_t, py::array::c_style> &ids,
   const py::array_t<bool, py::array::c_style> &frozen,
   const bool wrap, float radius_decay, float weight_swappable, float weight_non_swappable, float weight_hole,
-  int max_swap_positions
+  int max_swap_positions, int seed
 ) {
   // ids
   const py::buffer_info ids_info = ids.request();
@@ -29,7 +29,7 @@ std::tuple<int, py::array_t<int32_t> > flas(
     const py::array_t<int32_t> tmp({1});
     return std::make_tuple(2, tmp);
   }
-  const ssize_t n_features = features_info.shape[0];
+  // const ssize_t n_features = features_info.shape[0];
   const ssize_t dim = features_info.shape[1];
 
   // frozen
@@ -50,12 +50,19 @@ std::tuple<int, py::array_t<int32_t> > flas(
     wrap, 0.5f, radius_decay, 1, 1.0f, weight_swappable, weight_non_swappable, weight_hole, 1.0f, max_swap_positions
   );
 
+  RandomEngine rng;
+  if (seed == -1)
+    rng.seed(std::random_device()());
+  else
+    rng.seed(seed);
+
   arrange_with_holes(
     static_cast<const float *>(features_info.ptr),
     static_cast<int>(dim),
     &grid_map,
     static_cast<const bool *>(frozen_info.ptr),
-    &settings
+    &settings,
+    &rng
   );
 
   const py::array_t<int32_t> result_indices({height, width});

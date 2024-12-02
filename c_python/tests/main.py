@@ -11,8 +11,8 @@ DIM = 3
 
 
 def test_2d():
-    all_features = np.random.random((N_ALL_FEATURES, DIM)).astype(np.float32)
-    rng = np.random.default_rng()
+    rng = np.random.default_rng(42)
+    all_features = rng.random((N_ALL_FEATURES, DIM)).astype(np.float32)
     query_labels = rng.choice(a=N_ALL_FEATURES, size=QUERY_SIZE, replace=False, shuffle=False)
 
     query_features = all_features[query_labels]
@@ -29,7 +29,7 @@ def test_2d():
         labels=query_labels[1:]
     )
 
-    arrangement = flas(grid_builder.build(freeze_holes=False), wrap=False, radius_decay=0.93)
+    arrangement = flas(grid_builder.build(freeze_holes=False), wrap=False, radius_decay=0.93, seed=45)
 
     # sorted_features = arrangement.sort_by_labels(all_features, np.zeros(3, dtype=np.float32))
     # sorted_features = np.array(sorted_features)

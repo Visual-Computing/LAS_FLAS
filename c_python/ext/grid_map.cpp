@@ -8,6 +8,7 @@
 #include <iostream>
 #include <cstdio>
 #include <cstring>
+#include <random>
 
 #include "det_random.hpp"
 
@@ -118,18 +119,6 @@ int free_count(const GridMap *grid) {
     }
   }
   return free_count;
-}
-
-// Function to shuffle the grid cells
-void shuffle(const GridMap *grid) {
-  int len = size(grid);
-  for (int i = 0; i < len; i++) {
-    int random_index_to_swap = det_next_int(len);
-    // int random_index_to_swap = rand() % len;
-    int temp = grid->cells[random_index_to_swap];
-    grid->cells[random_index_to_swap] = grid->cells[i];
-    grid->cells[i] = temp;
-  }
 }
 
 // Function to clear the grid (set all cells to -1)

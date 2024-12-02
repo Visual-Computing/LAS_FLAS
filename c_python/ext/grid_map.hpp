@@ -46,9 +46,6 @@ bool is_cell_empty(const GridMap *grid, int x, int y);
 // Function to count the number of free cells (cells containing -1)
 int free_count(const GridMap *grid);
 
-// Function to shuffle the grid cells
-void shuffle(const GridMap *grid);
-
 // Function to clear the grid (set all cells to -1)
 void clear(const GridMap *grid);
 
