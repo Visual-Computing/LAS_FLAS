@@ -43,52 +43,73 @@ class Grid:
         return self.ids.shape
 
     @classmethod
-    def from_data(cls, features: np.ndarray, aspect_ratio: float = 1.0, freeze_holes: bool = True):
+    def from_grid_features(cls, features: np.ndarray):
         """
         Creates a new grid from the given features.
 
-        :param features: numpy array with shape (h, w, d) or (n, d).
-        :param aspect_ratio: The preferred aspect ratio of the grid. This is only used if features has shape (n, d).
-                             Otherwise, the dimensions of the given features are used.
+        :param features: numpy array with shape (h, w, d).
+        :return: The new grid with the given features.
+        """
+        if features.dtype != np.float32:
+            features = features.astype(np.float32)
+        if features.ndim != 3:
+            raise ValueError('features must have shape (h, w, d) but got: {}'.format(features.shape))
+        height, width, dim = features.shape
+        n = height * width
+        return Grid(
+            features=features.reshape(n, dim),
+            ids=np.arange(n, dtype=np.int32).reshape(height, width),
+            frozen=np.zeros((height, width), dtype=np.bool),
+            labels=np.arange(n, dtype=np.uint32),
+        )
+
+    @classmethod
+    def from_features(
+            cls, features: np.ndarray, size: Tuple[int, int] | None = None, aspect_ratio: float = 1.0,
+            freeze_holes: bool = True
+    ):
+        """
+        Creates a new grid from the given features.
+
+        :param features: numpy array with shape (n, d).
+        :param size: The size of the grid. If None, the size is determined automatically using aspect ratio.
+        :param aspect_ratio: The preferred aspect ratio of the grid. If size is given, this is ignored.
         :param freeze_holes: Sometimes holes are needed, to create a grid with the given aspect ratio. In this case this
                              parameter defines whether holes should be frozen.
         :return:
         """
+        if features.ndim != 2:
+            raise ValueError('features must have shape (n, d) but got: {}'.format(features.shape))
+
         if features.dtype != np.float32:
             features = features.astype(np.float32)
 
-        if features.ndim == 3:
-            height, width, dim = features.shape
-            n = height * width
-            return Grid(
-                features=features.reshape(n, dim),
-                ids=np.arange(n, dtype=np.int32).reshape(height, width),
-                frozen=np.zeros((height, width), dtype=np.bool),
-                labels=np.arange(n, dtype=np.uint32),
-            )
-        elif features.ndim == 2:  # 1d features case
-            n, dim = features.shape
+        n, dim = features.shape
+
+        if size is not None:
+            height, width = size
+            if height * width < n:
+                raise ValueError('size ({}, {}) is too small for {} features'.format(height, width, n))
+        else:
             height, width = flas_cpp.get_optimal_grid_size(n, aspect_ratio, 2, 2)
 
-            # ids
-            ids = np.empty(height * width, dtype=np.int32)
-            ids[n:] = -1
-            ids[:n] = np.arange(n, dtype=np.int32)
+        # ids
+        ids = np.empty(height * width, dtype=np.int32)
+        ids[:n] = np.arange(n, dtype=np.int32)
+        ids[n:] = -1
 
-            # frozen
-            frozen = np.zeros(height * width, dtype=np.bool)
-            if freeze_holes:
-                frozen[n:] = True  # freeze holes
-            frozen = frozen.reshape(height, width)
+        # frozen
+        frozen = np.zeros(height * width, dtype=np.bool)
+        if freeze_holes:
+            frozen[n:] = True  # freeze holes
+        frozen = frozen.reshape(height, width)
 
-            return Grid(
-                features=features,
-                ids=ids.reshape(height, width),
-                frozen=frozen,
-                labels=np.arange(n, dtype=np.uint32),
-            )
-        else:
-            raise ValueError('features must have shape (h, w, d) or (n, d) but got: {}'.format(features.shape))
+        return Grid(
+            features=features,
+            ids=ids.reshape(height, width),
+            frozen=frozen,
+            labels=np.arange(n, dtype=np.uint32),
+        )
 
 
 class Labeler:
@@ -444,9 +465,12 @@ def flas(grid: Grid | np.ndarray, wrap: bool = False, radius_decay: float = 0.93
     if isinstance(grid, Grid):
         pass
     elif isinstance(grid, np.ndarray):
-        if grid.dtype != np.float32:
-            grid = grid.astype(np.float32)
-        grid = Grid.from_data(grid)
+        if grid.ndim == 2:
+            grid = Grid.from_features(grid)
+        elif grid.ndim == 3:
+            grid = Grid.from_grid_features(grid)
+        else:
+            raise ValueError('numpy grid must have shape (h, w, d) or (n, d) but got: {}'.format(grid.shape))
     else:
         raise TypeError('features must be a Grid or a numpy array but got: {}'.format(type(grid)))
 
