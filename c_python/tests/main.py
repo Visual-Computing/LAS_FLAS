@@ -22,14 +22,17 @@ def test_2d():
     grid_builder.put(
         query_features[0],
         (32, 32),
-        # query_labels[0],
+        query_labels[0],
     )
     grid_builder.add(
         features=query_features[1:],
-        # labels=query_labels[1:]
+        labels=query_labels[1:]
     )
 
     arrangement = flas(grid_builder.build(freeze_holes=False), wrap=False, radius_decay=0.93)
+
+    # sorted_features = arrangement.sort_by_labels(all_features, np.zeros(3, dtype=np.float32))
+    # sorted_features = np.array(sorted_features)
 
     sorted_features = arrangement.get_sorted_features()
 
@@ -74,6 +77,6 @@ def reproduce_bug():
 
 
 if __name__ == '__main__':
-    # test_2d()
     # test_1d()
-    reproduce_bug()
+    test_2d()
+    # reproduce_bug()
