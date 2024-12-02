@@ -6,7 +6,7 @@
 #ifndef FAST_LINEAR_ASSIGNMENT_SORTER_H
 #define FAST_LINEAR_ASSIGNMENT_SORTER_H
 
-#include "map_place.hpp"
+#include "map_field.hpp"
 
 class FlasSettings {
 public:
@@ -37,6 +37,6 @@ public:
 };
 
 FlasSettings default_settings();
-void do_sorting_full(MapPlace *map_places, int dim, int columns, int rows, const FlasSettings *settings);
+void do_sorting_full(MapField *map_fields, int dim, int columns, int rows, const FlasSettings *settings);
 
 #endif //FAST_LINEAR_ASSIGNMENT_SORTER_H

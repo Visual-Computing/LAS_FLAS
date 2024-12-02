@@ -23,8 +23,8 @@ set(LIBRARY_SOURCES
 	ext/grid_map.hpp
 	ext/junker_volgenant_solver.cpp
 	ext/junker_volgenant_solver.hpp
-	ext/map_place.cpp
-	ext/map_place.hpp
+		ext/map_field.cpp
+		ext/map_field.hpp
 )
 
 # Create the library (STATIC or SHARED, depending on needs)
