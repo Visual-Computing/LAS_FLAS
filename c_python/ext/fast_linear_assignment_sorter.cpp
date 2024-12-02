@@ -102,6 +102,7 @@ InternalData create_internal_data(MapPlace *map_places, int columns, int rows, i
   data.rows = rows;
   data.grid_size = columns * rows;
   data.dim = dim;
+  int num_valid_map_places = get_num_valid_map_places(map_places, data.grid_size);
 
   data.map_places = map_places;
 
@@ -117,7 +118,7 @@ InternalData create_internal_data(MapPlace *map_places, int columns, int rows, i
     exit(1);
   }
 
-  data.num_swap_positions = min(max_swap_positions, data.grid_size);
+  data.num_swap_positions = min(max_swap_positions, num_valid_map_places);
 
   data.swap_positions = static_cast<int *>(malloc(data.num_swap_positions * sizeof(int)));
   if (data.swap_positions == nullptr) {
@@ -349,8 +350,9 @@ void do_swaps(const InternalData *data) {
     if (swapped_element->id > -1) {
       data->fvs[i] = swapped_element->feature;
       num_valid++;
-    } else
+    } else {
       data->fvs[i] = &data->som[swap_position * data->dim]; // hole
+    }
 
     data->som_fvs[i] = &data->som[swap_position * data->dim];
   }
@@ -395,8 +397,9 @@ void find_swap_positions(const InternalData *data, const int *swap_indices, int 
     int y = (y_start + dy) % data->rows;
     int pos = y * data->columns + x;
 
-    if (data->map_places[pos].is_swappable)
+    if (data->map_places[pos].is_swappable) {
       data->swap_positions[num_swap_positions++] = pos;
+    }
   }
 }
 
