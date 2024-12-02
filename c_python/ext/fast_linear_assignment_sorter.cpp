@@ -308,8 +308,9 @@ void find_swap_positions_wrap(const InternalData *data, const int *swap_indices,
     int y = (d / data->columns) % data->rows;
     int pos = y * data->columns + x;
 
-    if (data->map_places[pos].is_swappable)
+    if (data->map_places[pos].is_swappable) {
       data->swap_positions[current_num_swap_positions++] = pos;
+    }
   }
 }
 
@@ -326,7 +327,11 @@ void calc_dist_lut_l2_int(const InternalData *data) {
   float max = 0;
   for (int i = 0; i < data->num_swap_positions; i++)
     for (int j = 0; j < data->num_swap_positions; j++) {
+      std::cout << "num_swap_positions=" << data->num_swap_positions << " i=" << i << " j=" << j << std::endl;
+      std::cout << "fvs[" << i << "]     = " << data->fvs[i] << std::endl;
+      std::cout << "som_fvs[" << j << "] = " << data->som_fvs[j] << std::endl;
       const float val = get_l2_distance(data->fvs[i], data->som_fvs[j], data->dim);
+      std::cout << "done" << std::endl;
       data->dist_lut_f[i * data->num_swap_positions + j] = val;
       if (val > max)
         max = val;
@@ -348,10 +353,12 @@ void do_swaps(const InternalData *data) {
 
     // handle holes
     if (swapped_element->id > -1) {
+      std::cout << "    valid fvs[" << i << "] = " << swapped_element->feature << " swap_position=" << swap_position << std::endl;
       data->fvs[i] = swapped_element->feature;
       num_valid++;
     } else {
       data->fvs[i] = &data->som[swap_position * data->dim]; // hole
+      std::cout << "not valid fvs[" << i << "] = " << &data->som[swap_position * data->dim] << " swap_position=" << swap_position << std::endl;
     }
 
     data->som_fvs[i] = &data->som[swap_position * data->dim];
@@ -389,6 +396,7 @@ void find_swap_positions(const InternalData *data, const int *swap_indices, int 
                      // rand() % (num_swap_indices - data->num_swap_positions)
                      : 0;
   int num_swap_positions = 0;
+  std::cout << "num_swap_indices=" << num_swap_indices << std::endl;
   for (int j = start_index; j < num_swap_indices && num_swap_positions < data->num_swap_positions; j++) {
     int dx = swap_indices[j] % data->columns;
     int dy = swap_indices[j] / data->columns;
@@ -398,6 +406,7 @@ void find_swap_positions(const InternalData *data, const int *swap_indices, int 
     int pos = y * data->columns + x;
 
     if (data->map_places[pos].is_swappable) {
+      std::cout << "setting swap_positions[" << num_swap_positions << "] = " << pos << std::endl;
       data->swap_positions[num_swap_positions++] = pos;
     }
   }
