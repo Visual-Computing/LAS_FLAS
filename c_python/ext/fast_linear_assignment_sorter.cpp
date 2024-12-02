@@ -41,9 +41,9 @@ typedef struct {
   int num_swap_positions;
 
   /**
-   * Array of MapPlace with size [grid_size]
+   * Array of MapField with size [grid_size]
    */
-  MapPlace *map_places;
+  MapField *map_fields;
 
   /**
    * Float array with size [grid_size, dim]
@@ -74,7 +74,7 @@ typedef struct {
   /**
    * Array with size [num_swap_positions].
    */
-  MapPlace *swapped_elements;
+  MapField *swapped_elements;
 
   /**
    * Integer distance matrix with size [num_swap_position * num_swap_positions].
@@ -95,16 +95,16 @@ int max(const int a, const int b) {
   return a > b ? a : b;
 }
 
-InternalData create_internal_data(MapPlace *map_places, int columns, int rows, int dim, int max_swap_positions) {
+InternalData create_internal_data(MapField *map_fields, int columns, int rows, int dim, int max_swap_positions) {
   InternalData data;
 
   data.columns = columns;
   data.rows = rows;
   data.grid_size = columns * rows;
   data.dim = dim;
-  int num_valid_map_places = get_num_swappable(map_places, data.grid_size);
+  int num_valid_map_fields = get_num_swappable(map_fields, data.grid_size);
 
-  data.map_places = map_places;
+  data.map_fields = map_fields;
 
   data.som = static_cast<float *>(calloc(data.grid_size * dim, sizeof(float)));
   if (data.som == nullptr) {
@@ -118,7 +118,7 @@ InternalData create_internal_data(MapPlace *map_places, int columns, int rows, i
     exit(1);
   }
 
-  data.num_swap_positions = min(max_swap_positions, num_valid_map_places);
+  data.num_swap_positions = min(max_swap_positions, num_valid_map_fields);
 
   data.swap_positions = static_cast<int *>(malloc(data.num_swap_positions * sizeof(int)));
   if (data.swap_positions == nullptr) {
@@ -138,12 +138,12 @@ InternalData create_internal_data(MapPlace *map_places, int columns, int rows, i
     exit(1);
   }
 
-  data.swapped_elements = static_cast<MapPlace *>(malloc(data.num_swap_positions * sizeof(MapPlace)));
+  data.swapped_elements = static_cast<MapField *>(malloc(data.num_swap_positions * sizeof(MapField)));
   if (data.swapped_elements == nullptr) {
     std::cerr << "Failed to allocate swapped_elements.\n" << std::endl;
     exit(1);
   }
-  memcpy(data.swapped_elements, data.map_places, data.num_swap_positions * sizeof(MapPlace));
+  memcpy(data.swapped_elements, data.map_fields, data.num_swap_positions * sizeof(MapField));
 
   data.dist_lut = static_cast<int *>(malloc(data.num_swap_positions * data.num_swap_positions * sizeof(int)));
   if (data.dist_lut == nullptr) {
@@ -189,15 +189,15 @@ FlasSettings default_settings() {
 
 /**
  *
- * @param map_places Array of MapPlaces with length columns * rows. If a map place has id == -1, it is not used for
+ * @param map_fields Array of MapFields with length columns * rows. If a map field has id == -1, it is not used for
  *									 swapping.
  * @param dim The dimensionality of the features
  * @param columns Number of columns in the grid to sort
  * @param rows Number of rows in the grid to sort
  * @param settings The settings of the sorting algorithm
  */
-void do_sorting_full(MapPlace *map_places, int dim, int columns, int rows, const FlasSettings *settings) {
-  const InternalData data = create_internal_data(map_places, columns, rows, dim, settings->max_swap_positions);
+void do_sorting_full(MapField *map_fields, int dim, int columns, int rows, const FlasSettings *settings) {
+  const InternalData data = create_internal_data(map_fields, columns, rows, dim, settings->max_swap_positions);
 
   // set up the initial radius
   float rad = static_cast<float>(max(columns, rows)) * settings->initial_radius_factor;
@@ -223,7 +223,7 @@ void do_sorting_full(MapPlace *map_places, int dim, int columns, int rows, const
 void copy_feature_vectors_to_som(const InternalData *data, const FlasSettings *settings) {
   for (int pos = 0; pos < data->grid_size; pos++) {
     float *som_cell = data->som + (pos * data->dim);
-    const MapPlace *cell = data->map_places + pos;
+    const MapField *cell = data->map_fields + pos;
 
     // handle holes
     if (cell->id > -1) {
@@ -308,7 +308,7 @@ int find_swap_positions_wrap(const InternalData *data, const int *swap_indices, 
     int y = (d / data->columns) % data->rows;
     int pos = y * data->columns + x;
 
-    if (data->map_places[pos].is_swappable) {
+    if (data->map_fields[pos].is_swappable) {
       data->swap_positions[swap_pos++] = pos;
     }
   }
@@ -345,7 +345,7 @@ void do_swaps(const InternalData *data, int num_swaps) {
   int num_valid = 0;
   for (int i = 0; i < num_swaps; i++) {
     int swap_position = data->swap_positions[i];
-    MapPlace *swapped_element = &data->map_places[swap_position];
+    MapField *swapped_element = &data->map_fields[swap_position];
     data->swapped_elements[i] = *swapped_element;
 
     // handle holes
@@ -364,7 +364,7 @@ void do_swaps(const InternalData *data, int num_swaps) {
     int *permutation = compute_assignment(data->dist_lut, num_swaps);
 
     for (int i = 0; i < num_swaps; i++) {
-      data->map_places[data->swap_positions[permutation[i]]] = data->swapped_elements[i];
+      data->map_fields[data->swap_positions[permutation[i]]] = data->swapped_elements[i];
     }
 
     free(permutation);
@@ -399,7 +399,7 @@ int find_swap_positions(const InternalData *data, const int *swap_indices, int n
     int y = (y_start + dy) % data->rows;
     int pos = y * data->columns + x;
 
-    if (data->map_places[pos].is_swappable) {
+    if (data->map_fields[pos].is_swappable) {
       data->swap_positions[num_swap_positions++] = pos;
     }
   }

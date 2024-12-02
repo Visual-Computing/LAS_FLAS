@@ -1,0 +1,27 @@
+//
+// Created by Bruno Schilling on 10/28/24.
+// Ported from https://github.com/Visual-Computing/DynamicExplorationGraph/tree/cb7243f7296ef4513b8a5177773a7f30826c5f7b/java/deg-visualization/src/main/java/com/vc/deg/viz/om
+//
+#include "map_field.hpp"
+
+void init_map_field(MapField *map_field, const int id, const float *const feature, const bool is_swappable) {
+  map_field->id = id;
+  map_field->feature = feature;
+  map_field->is_swappable = is_swappable;
+}
+
+void init_invalid_map_field(MapField *map_field, const bool is_swappable) {
+  map_field->id = -1;
+  map_field->feature = nullptr;
+  map_field->is_swappable = is_swappable;
+}
+
+int get_num_swappable(const MapField *map_fields, const int num_map_fields) {
+  int num_swappable = 0;
+  for (int i = 0; i < num_map_fields; i++) {
+    if (map_fields[i].is_swappable) {
+      num_swappable++;
+    }
+  }
+  return num_swappable;
+}
