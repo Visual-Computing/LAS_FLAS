@@ -1,7 +1,12 @@
-from typing import Optional, List, Tuple, Any
+from collections.abc import Mapping
+from typing import Optional, List, Tuple, Any, Callable, Protocol, TypeVar
 
 import numpy as np
 import flas_cpp
+
+
+T = TypeVar('T')
+K = TypeVar('K')
 
 
 class Grid:
@@ -443,6 +448,47 @@ class Arrangement:
         """
         labels = np.concatenate([self.grid.labels, [-1]])
         return labels[self.sorting.flatten()].reshape(self.sorting.shape)
+
+    class LabelToObj(Protocol[K, T]):
+        def __getitem__(self, key: K) -> Any:
+            pass
+
+    def sort_by_labels(
+            self, label_to_obj: LabelToObj[int, Any], hole_value: Any = None
+    ) -> List[List[Any]]:
+        """
+        Given a translation label -> obj, this function creates a two-dimensional list, where result[y][x] contains the
+        object given by label_to_obj[get_sorted_labels()[y, x]].
+
+        :param label_to_obj: The translation label -> obj. If the index-operator[] is implemented, it is used. If not
+                             label_to_obj is called like this: label_to_obj(label)
+        :param hole_value: Value to use for holes. Defaults to None.
+        """
+        class IndexWrapper:
+            def __init__(self, lto):
+                self.label_to_obj = lto
+
+            def __getitem__(self, item):
+                return self.label_to_obj(item)
+
+        if hasattr(label_to_obj, '__getitem__'):
+            pass
+        elif callable(label_to_obj):
+            label_to_obj = IndexWrapper(label_to_obj)
+        else:
+            raise TypeError('label_to_obj must be a mapping or a callable but got: {}'.format(type(label_to_obj)))
+
+        labels = self.get_sorted_labels()
+        result = []
+        for line in labels:
+            line_result = []
+            for label in line:
+                if label == -1:
+                    line_result.append(hole_value)
+                else:
+                    line_result.append(label_to_obj[label])
+            result.append(line_result)
+        return result
 
 
 def flas(grid: Grid | np.ndarray, wrap: bool = False, radius_decay: float = 0.93, max_swap_positions: int = 9,
