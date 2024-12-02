@@ -58,10 +58,10 @@ def create_grid_by_feature_list(n: int, dim: int, aspect_ratio: float = 1.0, see
     return Grid.from_data(features, aspect_ratio=aspect_ratio)
 
 
-def do_something():
+def reproduce_bug():
     dim = 3
     n = 7
-    aspect_ratio = 0.5
+    aspect_ratio = 1.0
     for _ in range(10):
         grid = create_grid_by_feature_list(n, dim, aspect_ratio, seed=1)
         print(n, aspect_ratio, grid.get_size())
@@ -74,6 +74,6 @@ def do_something():
 
 
 if __name__ == '__main__':
-    test_2d()
+    # test_2d()
     # test_1d()
-    # do_something()
+    reproduce_bug()

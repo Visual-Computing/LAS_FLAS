@@ -11,8 +11,10 @@ def create_grid_by_feature_list(n: int, dim: int, aspect_ratio: float = 1.0) -> 
 def test_grid_creations_list():
     dim = 3
     # for n in [4, 7, 25, 51, 60*60-1, 60*60]:
-    for n in [7, 25, 51, 60*60-1, 60*60]:
+    for n in [4, 7, 25, 51, 60*60-1, 60*60]:
         for aspect_ratio in [1.0, 0.5, 2.0, 16 / 9]:
+            with open('log.txt', 'a') as f:
+                f.write(f'n={n} aspect_ratio={aspect_ratio}\n')
             grid = create_grid_by_feature_list(n, dim, aspect_ratio)
             flas(grid)
 
@@ -22,7 +24,7 @@ def create_grid_by_feature_map(height: int, width: int, dim: int) -> Grid:
     return Grid.from_data(features)
 
 
-def atest_grid_creations_map():
+def test_grid_creations_map():
     dim = 3
     for height in [2, 7, 25, 51, 60]:
         for width in [2, 7, 25, 51, 60]:
@@ -37,7 +39,7 @@ def create_grid_dynamic_builder(n: int, dim: int, aspect_ratio: float = 1.0) -> 
     return builder.build()
 
 
-def atest_builder_dynamic():
+def test_builder_dynamic():
     dim = 3
     for n in [4, 7, 25, 51, 60*60-1, 60*60]:
         for aspect_ratio in [1.0, 0.5, 2.0, 16 / 9]:
