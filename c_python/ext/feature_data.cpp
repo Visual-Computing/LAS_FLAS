@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+#include "det_random.hpp"
+
 /*
 shuffled values of a grid in a 2d plane.
 
@@ -60,8 +62,8 @@ float *random_features(int grid_size) {
   }
   for (int i = 0; i < grid_size * grid_size; i++) {
     for (int d = 0; d < dim; d++) {
-      // features[i * dim + d] = det_next_float();
-      features[i * dim + d] = rand() / static_cast<float>(RAND_MAX);
+      features[i * dim + d] = det_next_float();
+      // features[i * dim + d] = rand() / static_cast<float>(RAND_MAX);
     }
   }
   return features;

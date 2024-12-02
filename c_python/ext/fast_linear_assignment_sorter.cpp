@@ -10,6 +10,8 @@
 
 #include <cstring>
 
+#include "det_random.hpp"
+
 constexpr int QUANT = 256;
 
 typedef struct {
@@ -282,8 +284,8 @@ void filter_weighted_som(
 
 void shuffle_array(int *array, int size) {
   for (int i = size - 1; i > 0; i--) {
-    // int index = det_next_int(i + 1);
-    int index = rand() % (i+1);
+    int index = det_next_int(i + 1);
+    // int index = rand() % (i+1);
     int temp = array[index];
     array[index] = array[i];
     array[i] = temp;
@@ -292,11 +294,11 @@ void shuffle_array(int *array, int size) {
 
 void find_swap_positions_wrap(const InternalData *data, const int *swap_indices, const int num_swap_indices) {
   int start_index = (num_swap_indices - data->num_swap_positions > 0) ?
-                      // ? det_next_int(num_swap_indices - data->num_swap_positions)
-                      rand() % (num_swap_indices - data->num_swap_positions)
+                      det_next_int(num_swap_indices - data->num_swap_positions)
+                      // rand() % (num_swap_indices - data->num_swap_positions)
                       : 0;
-  // int pos0 = det_next_int(data->grid_size);
-  int pos0 = rand() % (data->rows * data->columns);
+  int pos0 = det_next_int(data->grid_size);
+  // int pos0 = rand() % (data->rows * data->columns);
 
   int current_num_swap_positions = 0;
   for (int j = start_index; j < num_swap_indices && current_num_swap_positions < data->num_swap_positions; j++) {
@@ -368,8 +370,8 @@ void do_swaps(const InternalData *data) {
 void find_swap_positions(const InternalData *data, const int *swap_indices, int num_swap_indices, int swap_area_width,
                          int swap_area_height) {
   // calculate start position of swap area
-  //int pos0 = det_next_int(data->grid_size);
-  int pos0 = rand() % (data->rows * data->columns);
+  int pos0 = det_next_int(data->grid_size);
+  // int pos0 = rand() % (data->rows * data->columns);
   int x0 = pos0 % data->columns;
   int y0 = pos0 / data->columns;
 
@@ -381,8 +383,8 @@ void find_swap_positions(const InternalData *data, const int *swap_indices, int 
     y_start = data->rows - swap_area_height;
 
   int start_index = num_swap_indices - data->num_swap_positions > 0 ?
-                     rand() % (num_swap_indices - data->num_swap_positions)
-                     /* det_next_int(num_swap_indices - data->num_swap_positions) */
+                     det_next_int(num_swap_indices - data->num_swap_positions)
+                     // rand() % (num_swap_indices - data->num_swap_positions)
                      : 0;
   int num_swap_positions = 0;
   for (int j = start_index; j < num_swap_indices && num_swap_positions < data->num_swap_positions; j++) {
