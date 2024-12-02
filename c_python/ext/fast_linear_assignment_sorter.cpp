@@ -102,7 +102,7 @@ InternalData create_internal_data(MapPlace *map_places, int columns, int rows, i
   data.rows = rows;
   data.grid_size = columns * rows;
   data.dim = dim;
-  int num_valid_map_places = get_num_valid_map_places(map_places, data.grid_size);
+  int num_valid_map_places = get_num_swappable(map_places, data.grid_size);
 
   data.map_places = map_places;
 
@@ -293,7 +293,7 @@ void shuffle_array(int *array, int size) {
   }
 }
 
-void find_swap_positions_wrap(const InternalData *data, const int *swap_indices, const int num_swap_indices) {
+int find_swap_positions_wrap(const InternalData *data, const int *swap_indices, const int num_swap_indices) {
   int start_index = (num_swap_indices - data->num_swap_positions > 0) ?
                       det_next_int(num_swap_indices - data->num_swap_positions)
                       // rand() % (num_swap_indices - data->num_swap_positions)
@@ -301,17 +301,18 @@ void find_swap_positions_wrap(const InternalData *data, const int *swap_indices,
   int pos0 = det_next_int(data->grid_size);
   // int pos0 = rand() % (data->rows * data->columns);
 
-  int current_num_swap_positions = 0;
-  for (int j = start_index; j < num_swap_indices && current_num_swap_positions < data->num_swap_positions; j++) {
+  int swap_pos = 0;
+  for (int j = start_index; j < num_swap_indices && swap_pos < data->num_swap_positions; j++) {
     int d = pos0 + swap_indices[j];
     int x = d % data->columns;
     int y = (d / data->columns) % data->rows;
     int pos = y * data->columns + x;
 
     if (data->map_places[pos].is_swappable) {
-      data->swap_positions[current_num_swap_positions++] = pos;
+      data->swap_positions[swap_pos++] = pos;
     }
   }
+  return swap_pos;
 }
 
 float get_l2_distance(const float *fv1, const float *fv2, int dim) {
@@ -323,52 +324,46 @@ float get_l2_distance(const float *fv1, const float *fv2, int dim) {
   return dist;
 }
 
-void calc_dist_lut_l2_int(const InternalData *data) {
+void calc_dist_lut_l2_int(const InternalData *data, int num_swaps) {
   float max = 0;
-  for (int i = 0; i < data->num_swap_positions; i++)
-    for (int j = 0; j < data->num_swap_positions; j++) {
-      std::cout << "num_swap_positions=" << data->num_swap_positions << " i=" << i << " j=" << j << std::endl;
-      std::cout << "fvs[" << i << "]     = " << data->fvs[i] << std::endl;
-      std::cout << "som_fvs[" << j << "] = " << data->som_fvs[j] << std::endl;
+  for (int i = 0; i < num_swaps; i++)
+    for (int j = 0; j < num_swaps; j++) {
       const float val = get_l2_distance(data->fvs[i], data->som_fvs[j], data->dim);
-      std::cout << "done" << std::endl;
-      data->dist_lut_f[i * data->num_swap_positions + j] = val;
+      data->dist_lut_f[i * num_swaps + j] = val;
       if (val > max)
         max = val;
     }
 
-  for (int i = 0; i < data->num_swap_positions; i++)
-    for (int j = 0; j < data->num_swap_positions; j++) {
-      data->dist_lut[i * data->num_swap_positions + j] = static_cast<int>(
-        static_cast<float>(QUANT) * data->dist_lut_f[i * data->num_swap_positions + j] / max + 0.5f);
+  for (int i = 0; i < num_swaps; i++)
+    for (int j = 0; j < num_swaps; j++) {
+      data->dist_lut[i * num_swaps + j] = static_cast<int>(
+        static_cast<float>(QUANT) * data->dist_lut_f[i * num_swaps + j] / max + 0.5f);
     }
 }
 
-void do_swaps(const InternalData *data) {
+void do_swaps(const InternalData *data, int num_swaps) {
   int num_valid = 0;
-  for (int i = 0; i < data->num_swap_positions; i++) {
+  for (int i = 0; i < num_swaps; i++) {
     int swap_position = data->swap_positions[i];
     MapPlace *swapped_element = &data->map_places[swap_position];
     data->swapped_elements[i] = *swapped_element;
 
     // handle holes
     if (swapped_element->id > -1) {
-      std::cout << "    valid fvs[" << i << "] = " << swapped_element->feature << " swap_position=" << swap_position << std::endl;
       data->fvs[i] = swapped_element->feature;
       num_valid++;
     } else {
       data->fvs[i] = &data->som[swap_position * data->dim]; // hole
-      std::cout << "not valid fvs[" << i << "] = " << &data->som[swap_position * data->dim] << " swap_position=" << swap_position << std::endl;
     }
 
     data->som_fvs[i] = &data->som[swap_position * data->dim];
   }
 
   if (num_valid > 0) {
-    calc_dist_lut_l2_int(data);
-    int *permutation = compute_assignment(data->dist_lut, data->num_swap_positions);
+    calc_dist_lut_l2_int(data, num_swaps);
+    int *permutation = compute_assignment(data->dist_lut, num_swaps);
 
-    for (int i = 0; i < data->num_swap_positions; i++) {
+    for (int i = 0; i < num_swaps; i++) {
       data->map_places[data->swap_positions[permutation[i]]] = data->swapped_elements[i];
     }
 
@@ -376,7 +371,7 @@ void do_swaps(const InternalData *data) {
   }
 }
 
-void find_swap_positions(const InternalData *data, const int *swap_indices, int num_swap_indices, int swap_area_width,
+int find_swap_positions(const InternalData *data, const int *swap_indices, int num_swap_indices, int swap_area_width,
                          int swap_area_height) {
   // calculate start position of swap area
   int pos0 = det_next_int(data->grid_size);
@@ -396,7 +391,6 @@ void find_swap_positions(const InternalData *data, const int *swap_indices, int 
                      // rand() % (num_swap_indices - data->num_swap_positions)
                      : 0;
   int num_swap_positions = 0;
-  std::cout << "num_swap_indices=" << num_swap_indices << std::endl;
   for (int j = start_index; j < num_swap_indices && num_swap_positions < data->num_swap_positions; j++) {
     int dx = swap_indices[j] % data->columns;
     int dy = swap_indices[j] / data->columns;
@@ -406,10 +400,10 @@ void find_swap_positions(const InternalData *data, const int *swap_indices, int 
     int pos = y * data->columns + x;
 
     if (data->map_places[pos].is_swappable) {
-      std::cout << "setting swap_positions[" << num_swap_positions << "] = " << pos << std::endl;
       data->swap_positions[num_swap_positions++] = pos;
     }
   }
+  return num_swap_positions;
 }
 
 void check_random_swaps(const InternalData *data, int radius, float sample_factor, bool do_wrap) {
@@ -440,13 +434,13 @@ void check_random_swaps(const InternalData *data, int radius, float sample_facto
   int num_swap_tries = max(1, static_cast<int>(sample_factor) * data->grid_size / data->num_swap_positions);
   if (do_wrap) {
     for (int n = 0; n < num_swap_tries; n++) {
-      find_swap_positions_wrap(data, swap_indices, num_swap_indices);
-      do_swaps(data);
+      int num_swaps = find_swap_positions_wrap(data, swap_indices, num_swap_indices);
+      do_swaps(data, num_swaps);
     }
   } else {
     for (int n = 0; n < num_swap_tries; n++) {
-      find_swap_positions(data, swap_indices, num_swap_indices, swap_area_width, swap_area_height);
-      do_swaps(data);
+      int num_swaps = find_swap_positions(data, swap_indices, num_swap_indices, swap_area_width, swap_area_height);
+      do_swaps(data, num_swaps);
     }
   }
   free(swap_indices);
