@@ -58,12 +58,13 @@ def create_grid_by_feature_list(n: int, dim: int, aspect_ratio: float = 1.0) -> 
 
 def do_something():
     dim = 3
-    for n in [4, 7, 25, 51, 60*60-1, 60*60]:
-        for aspect_ratio in [1.0, 0.5, 2.0, 16 / 9]:
-            grid = create_grid_by_feature_list(n, dim, aspect_ratio)
-            print(n, aspect_ratio, grid.get_size())
-            flas(grid)
-            print('done')
+    n = 7
+    aspect_ratio = 0.5
+    for _ in range(10):
+        grid = create_grid_by_feature_list(n, dim, aspect_ratio)
+        print(n, aspect_ratio, grid.get_size())
+        flas(grid)
+        print('done')
 
 
 if __name__ == '__main__':
