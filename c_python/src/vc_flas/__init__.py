@@ -1,4 +1,4 @@
-from typing import Optional, List, Tuple, Any, Protocol, TypeVar
+from typing import Optional, List, Tuple, Any, Protocol, TypeVar, Sequence, Mapping, Callable
 
 from . import metrics
 
@@ -48,8 +48,26 @@ class Grid:
         self.frozen = frozen
         self.labels = labels
 
+    def __repr__(self):
+        return 'Grid(size={} n_holes={})'.format(self.get_size(), self.get_num_holes())
+
     def get_size(self) -> Tuple[int, int]:
+        """
+        :return: the size of the grid as tuple (height, width).
+        """
         return self.ids.shape
+
+    def get_num_features(self) -> int:
+        """
+        :return: the number of features in the grid. Holes do not count.
+        """
+        return self.features.shape[0]
+
+    def get_num_holes(self) -> int:
+        """
+        :return: The number of holes in the grid.
+        """
+        return np.prod(self.ids.shape) - self.get_num_features()
 
     @classmethod
     def from_grid_features(cls, features: np.ndarray):
@@ -453,12 +471,8 @@ class Arrangement:
         labels = np.concatenate([self.grid.labels, [-1]])
         return labels[self.sorting.flatten()].reshape(self.sorting.shape)
 
-    class LabelToObj(Protocol[K, T]):
-        def __getitem__(self, key: K) -> Any:
-            pass
-
     def sort_by_labels(
-            self, label_to_obj: LabelToObj[int, Any], hole_value: Any = None
+            self, label_to_obj: Sequence | Mapping[int, Any] | Callable[[int], Any], hole_value: Any = None
     ) -> List[List[Any]]:
         """
         Given a translation label -> obj, this function creates a two-dimensional list, where result[y][x] contains the

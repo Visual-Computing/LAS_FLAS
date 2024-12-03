@@ -28,6 +28,7 @@ pip install -e .  # for develop/editable mode
 ```
 
 ## Usage
+### Basic Usage
 Given that you have N features with D-dimensions, you can sort these features
 based on similarity with the following code:
 
@@ -35,7 +36,7 @@ based on similarity with the following code:
 import numpy as np
 from vc_flas import Grid, flas
 
-N, D = 241, 7
+N, D = 241, 3
 features = np.random.random((N, D))
 grid = Grid.from_features(features)
 
@@ -43,16 +44,20 @@ arrangement = flas(grid, wrap=True, radius_decay=0.99)
 
 sorted_features = arrangement.get_sorted_features()
 height, width, dim = sorted_features.shape
-assert (height, width, dim) == (16, 16, 7)
+assert (height, width, dim) == (16, 16, 3)
+
+show_image(sorted_features)
 ```
 
-## TODO
-- Explain arrangements / labels
-- How to build grids (GridBuilder, Grid.from_features(), Grid.from_grid_features())
-- explain flas() Parameters
-- explain metrics
+### Working with Arrangements / Labels
+Often you need not only the features sorted, but other objects (like images for example) as well.
+See [this example](https://github.com/Visual-Computing/LAS_FLAS/blob/feat/c_python/c_python/examples/using_arrangements.py) for more information on that.
 
-For more usage examples see [examples]() TODO.
+### Creating Grids
+There are more ways to initialize grids. See [here](https://github.com/Visual-Computing/LAS_FLAS/blob/feat/c_python/c_python/examples/create_grids.py) for some examples.
+
+### Metrics
+TODO
 
 ## About
 **Kai Barthel, Nico Hezel, Klaus Jung, Bruno Schilling and Konstantin Schall**
