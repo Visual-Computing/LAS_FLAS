@@ -293,8 +293,6 @@ void filter_weighted_som(
 
 void shuffle_array(int *array, int size, RandomEngine* rng) {
   for (int i = size - 1; i > 0; i--) {
-    // int index = det_next_int(i + 1);
-    // int index = rand() % (i+1);
     std::uniform_int_distribution<uint32_t> index_dist(0, i);
     const unsigned int index = index_dist(*rng);
 
@@ -307,13 +305,9 @@ void shuffle_array(int *array, int size, RandomEngine* rng) {
 int find_swap_positions_wrap(const InternalData *data, const int *swap_indices, const int num_swap_indices) {
   std::uniform_int_distribution<uint32_t> index_dist(0, num_swap_indices - data->num_swap_positions - 1);
   unsigned int start_index = (num_swap_indices - data->num_swap_positions > 0) ?
-                      // det_next_int(num_swap_indices - data->num_swap_positions)
-                      // rand() % (num_swap_indices - data->num_swap_positions)
                       index_dist(*data->rng)
                       : 0;
   std::uniform_int_distribution<int32_t> pos_dist(0, data->grid_size - 1);
-  // int pos0 = det_next_int(data->grid_size);
-  // int pos0 = rand() % (data->rows * data->columns);
   const int pos0 = pos_dist(*data->rng);
 
   int swap_pos = 0;
@@ -389,9 +383,6 @@ void do_swaps(const InternalData *data, int num_swaps) {
 int find_swap_positions(const InternalData *data, const int *swap_indices, int num_swap_indices, int swap_area_width,
                          int swap_area_height) {
   // calculate start position of swap area
-  // int pos0 = det_next_int(data->grid_size);
-  // int pos0 = rand() % (data->rows * data->columns);
-
   std::uniform_int_distribution pos_dist(0, data->grid_size - 1);
   int pos0 = pos_dist(*data->rng);
   int x0 = pos0 % data->columns;
@@ -406,8 +397,6 @@ int find_swap_positions(const InternalData *data, const int *swap_indices, int n
 
   std::uniform_int_distribution index_dist(0, num_swap_indices - data->num_swap_positions - 1);
   int start_index = num_swap_indices - data->num_swap_positions > 0 ?
-                     // det_next_int(num_swap_indices - data->num_swap_positions)
-                     // rand() % (num_swap_indices - data->num_swap_positions)
                      index_dist(*data->rng)
                      : 0;
   int num_swap_positions = 0;
