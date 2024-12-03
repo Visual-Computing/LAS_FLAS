@@ -2,7 +2,7 @@
 
 from PIL import Image
 import numpy as np
-from flas import flas, apply_sorting, GridBuilder, Grid
+from flas import flas, GridBuilder, Grid
 
 N_ALL_FEATURES = 10000
 HEIGHT, WIDTH = 64, 64
@@ -29,6 +29,12 @@ def test_2d():
         labels=query_labels[1:]
     )
 
+    grid = Grid.from_features(features, aspect_ratio=16 / 9)
+    grid_builder.add(
+        features=grid.get_features(),
+        labels=grid.get_labels()
+    )
+
     arrangement = flas(grid_builder.build(freeze_holes=False), wrap=False, radius_decay=0.93)
 
     # sorted_features = arrangement.sort_by_labels(all_features, np.zeros(3, dtype=np.float32))
@@ -40,14 +46,29 @@ def test_2d():
     image.save('images/image1.png', 'PNG')
 
 
+def example_2d():
+    N, D = 241, 7
+    features = np.random.random((N, D))
+    grid = Grid.from_features(features)
+
+    arrangement = flas(grid, wrap=True, radius_decay=0.99)
+
+    sorted_features = arrangement.get_sorted_features()
+    height, width, dim = sorted_features.shape
+    print(height, width, dim)
+
+    image = Image.fromarray((sorted_features[:, :, :3] * 255).astype(np.uint8))
+    image.save('images/image1.png', 'PNG')
+
+
 def test_1d():
     features = np.random.random((HEIGHT * WIDTH, DIM)).astype(np.float32)
 
-    sorting = flas(features, wrap=False)
-    print('sorting.shape:', sorting.shape)
-    print(sorting)
+    arrangement = flas(features, wrap=False)
+    print('sorting.shape:', arrangement.shape)
+    print(arrangement)
 
-    sorted_features = apply_sorting(features, sorting)
+    sorted_features = arrangement.get_sorted_features()
     # print(sorted_features, sorted_features.dtype, sorted_features.shape)
 
     image = Image.fromarray((sorted_features[:, :, :3] * 255).astype(np.uint8))
@@ -78,5 +99,6 @@ def reproduce_bug():
 
 if __name__ == '__main__':
     # test_1d()
-    test_2d()
+    # test_2d()
+    example_2d()
     # reproduce_bug()
