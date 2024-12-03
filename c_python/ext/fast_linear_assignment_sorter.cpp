@@ -345,8 +345,7 @@ void calc_dist_lut_l2_int(const InternalData *data, int num_swaps) {
 
   for (int i = 0; i < num_swaps; i++)
     for (int j = 0; j < num_swaps; j++) {
-      data->dist_lut[i * num_swaps + j] = static_cast<int>(
-        static_cast<float>(QUANT) * data->dist_lut_f[i * num_swaps + j] / max + 0.5f);
+      data->dist_lut[i * num_swaps + j] = static_cast<int>(roundf(static_cast<float>(QUANT) * data->dist_lut_f[i * num_swaps + j] / max));
     }
 }
 
