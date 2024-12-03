@@ -12,7 +12,7 @@
 
 constexpr int QUANT = 256;
 
-typedef struct {
+struct InternalData {
   /**
    * Number of columns in the grid to sort.
    */
@@ -88,7 +88,7 @@ typedef struct {
    * RandomEngine for pseudo random number generation.
    */
   RandomEngine* rng;
-} InternalData;
+};
 
 int min(const int a, const int b) {
   return a < b ? a : b;
@@ -99,7 +99,7 @@ int max(const int a, const int b) {
 }
 
 InternalData create_internal_data(MapField *map_fields, int columns, int rows, int dim, int max_swap_positions, RandomEngine* rng) {
-  InternalData data;
+  InternalData data{};
 
   data.columns = columns;
   data.rows = rows;
@@ -201,6 +201,7 @@ FlasSettings default_settings() {
  * @param columns Number of columns in the grid to sort
  * @param rows Number of rows in the grid to sort
  * @param settings The settings of the sorting algorithm
+ * @param rng The RandomEngine to use for pseudo number generation
  */
 void do_sorting_full(
   MapField *map_fields, int dim, int columns, int rows, const FlasSettings *settings, RandomEngine* rng
