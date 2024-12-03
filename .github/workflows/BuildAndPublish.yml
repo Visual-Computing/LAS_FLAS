@@ -1,0 +1,100 @@
+name: BuildAndPublish
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    tags:
+      - 'v*.*.*'
+
+defaults:
+  run:
+    working-directory: c_python
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [windows-latest, macos-latest, macos-13, ubuntu-latest]
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: false
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Add requirements
+      run: python -m pip install --upgrade setuptools pybind11>=2.12.0 cibuildwheel
+
+    - name: Build Packages
+      run: cibuildwheel --output-dir "dist"
+      env:
+        CIBW_ARCHS: auto64
+        CIBW_BUILD_FRONTEND: "pip; args: --verbose"
+        CIBW_ENVIRONMENT_MACOS: "MACOSX_DEPLOYMENT_TARGET=11.00"
+        CIBW_SKIP: "cp313-*"
+
+    # upload artifacts
+    - name: Upload Build Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: release-dists-${{ matrix.platform }}
+        path: python/dist
+
+  build_sdist:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: false
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Add requirements
+      run: python -m pip install --upgrade setuptools pybind11>=2.12.0
+
+    - name: Build Source Distribution
+      run: python setup.py sdist
+
+    - name: Upload Build Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: release-dists-sdist
+        path: python/dist
+
+  pypi-publish:
+    runs-on: "ubuntu-latest"
+
+    needs:
+      - build
+      - build_sdist
+
+    permissions:
+      # IMPORTANT: this permission is mandatory for trusted publishing
+      id-token: write
+
+    # Dedicated environments with protections for publishing are strongly recommended.
+    environment:
+      name: pypi
+      # OPTIONAL: uncomment and update to include your PyPI project URL in the deployment status:
+      # url: https://test.pypi.org/project/deglib/
+
+    steps:
+      - name: Retrieve release distributions
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: release-dists-*
+          merge-multiple: true
+
+      - name: Publish release distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
