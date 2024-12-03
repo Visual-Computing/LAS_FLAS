@@ -19,8 +19,8 @@ std::tuple<int, py::array_t<int32_t> > flas(
     const py::array_t<int32_t> tmp({1});
     return std::make_tuple(1, tmp);
   }
-  const ssize_t height = ids_info.shape[0];
-  const ssize_t width = ids_info.shape[1];
+  const size_t height = ids_info.shape[0];
+  const size_t width = ids_info.shape[1];
   const int32_t* ids_ptr = static_cast<const int32_t *>(ids_info.ptr);
 
   // features
@@ -29,7 +29,7 @@ std::tuple<int, py::array_t<int32_t> > flas(
     const py::array_t<int32_t> tmp({1});
     return std::make_tuple(2, tmp);
   }
-  const ssize_t dim = features_info.shape[1];
+  const size_t dim = features_info.shape[1];
   const float* features_ptr = static_cast<const float *>(features_info.ptr);
 
   // frozen
@@ -100,7 +100,7 @@ std::tuple<int, py::array_t<int32_t> > flas(
   return std::make_tuple(0, result_indices);
 }
 
-std::tuple<uint32_t, uint32_t> get_size(const ssize_t n_features, const float aspect_ratio) {
+std::tuple<uint32_t, uint32_t> get_size(const size_t n_features, const float aspect_ratio) {
 	uint32_t height = static_cast<uint32_t>(std::sqrt(static_cast<float>(n_features) / aspect_ratio));
 	uint32_t width = static_cast<uint32_t>(static_cast<float>(height) * aspect_ratio);
 
