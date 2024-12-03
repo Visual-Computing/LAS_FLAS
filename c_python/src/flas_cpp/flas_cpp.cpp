@@ -16,7 +16,7 @@ std::tuple<int, py::array_t<int32_t> > flas(
   // ids
   const py::buffer_info ids_info = ids.request();
   if (ids_info.ndim != 2) {
-    const py::array_t<int32_t> tmp({1});
+    const py::array_t<int32_t> tmp(0);
     return std::make_tuple(1, tmp);
   }
   const size_t height = ids_info.shape[0];
@@ -26,7 +26,7 @@ std::tuple<int, py::array_t<int32_t> > flas(
   // features
   const py::buffer_info features_info = features.request();
   if (features_info.ndim != 2) {
-    const py::array_t<int32_t> tmp({1});
+    const py::array_t<int32_t> tmp(0);
     return std::make_tuple(2, tmp);
   }
   const size_t dim = features_info.shape[1];
@@ -35,12 +35,12 @@ std::tuple<int, py::array_t<int32_t> > flas(
   // frozen
   const py::buffer_info frozen_info = frozen.request();
   if (frozen_info.ndim != 2) {
-    const py::array_t<int32_t> result_indices({1});
+    const py::array_t<int32_t> result_indices(0);
     return std::make_tuple(3, result_indices);
   }
 
   if (frozen_info.shape[0] != height || frozen_info.shape[1] != width) {
-    const py::array_t<int32_t> result_indices({1});
+    const py::array_t<int32_t> result_indices(0);
     return std::make_tuple(4, result_indices);
   }
   const bool* frozen_ptr = static_cast<bool*>(frozen_info.ptr);
