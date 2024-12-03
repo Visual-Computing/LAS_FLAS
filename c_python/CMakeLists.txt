@@ -15,14 +15,10 @@ set(LIBRARY_SOURCES
 	ext/det_random.hpp
 	ext/fast_linear_assignment_sorter.cpp
 	ext/fast_linear_assignment_sorter.hpp
-	ext/flas_adapter.cpp
-	ext/flas_adapter.hpp
-	ext/grid_map.cpp
-	ext/grid_map.hpp
 	ext/junker_volgenant_solver.cpp
 	ext/junker_volgenant_solver.hpp
-		ext/map_field.cpp
-		ext/map_field.hpp
+	ext/map_field.cpp
+	ext/map_field.hpp
 )
 
 # Create the library (STATIC or SHARED, depending on needs)

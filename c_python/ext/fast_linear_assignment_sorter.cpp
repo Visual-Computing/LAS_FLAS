@@ -10,8 +10,6 @@
 
 #include <cstring>
 
-#include "flas_adapter.hpp"
-
 constexpr int QUANT = 256;
 
 typedef struct {
