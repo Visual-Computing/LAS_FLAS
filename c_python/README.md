@@ -15,7 +15,17 @@ This directory contains the python implementation and shows how to use it.
 - Fast implementation in C++
 
 ## Installation
-TODO: Install via pypi
+```shell
+pip install vc_flas
+```
+
+### Install from sources
+```shell
+git clone https://github.com/Visual-Computing/LAS_FLAS.git
+cd LAS_FLAS/c_python
+pip install .  # or
+pip install -e .  # for develop/editable mode
+```
 
 ## Usage
 Given that you have N features with D-dimensions, you can sort these features
