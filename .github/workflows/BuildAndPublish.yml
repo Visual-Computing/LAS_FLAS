@@ -45,7 +45,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: release-dists-${{ matrix.platform }}
-        path: python/dist
+        path: c_python/dist
 
   build_sdist:
     runs-on: ubuntu-latest
@@ -69,7 +69,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: release-dists-sdist
-        path: python/dist
+        path: c_python/dist
 
   pypi-publish:
     runs-on: "ubuntu-latest"
