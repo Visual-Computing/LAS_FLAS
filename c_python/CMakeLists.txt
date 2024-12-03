@@ -11,8 +11,6 @@ find_package(pybind11 CONFIG REQUIRED)
 
 # Add library sources
 set(LIBRARY_SOURCES
-	ext/det_random.cpp
-	ext/det_random.hpp
 	ext/fast_linear_assignment_sorter.cpp
 	ext/fast_linear_assignment_sorter.hpp
 	ext/junker_volgenant_solver.cpp
