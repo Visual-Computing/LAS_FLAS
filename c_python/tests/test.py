@@ -1,5 +1,5 @@
 import numpy as np
-from flas import GridBuilder
+from vc_flas import GridBuilder
 
 
 DIM = 5

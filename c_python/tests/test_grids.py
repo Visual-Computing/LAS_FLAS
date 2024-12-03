@@ -1,6 +1,6 @@
 import numpy as np
 
-from flas import Grid, GridBuilder, flas
+from vc_flas import Grid, GridBuilder, flas
 
 
 def create_grid_by_feature_list(n: int, dim: int, aspect_ratio: float = 1.0) -> Grid:

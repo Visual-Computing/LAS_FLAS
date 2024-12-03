@@ -11,8 +11,7 @@ from pathlib import Path
 
 import pybind11
 
-from setuptools import Extension, setup, Command, find_packages
-from setuptools.command.sdist import sdist as sdist_class
+from setuptools import Extension, setup, find_packages
 from setuptools.command.build_ext import build_ext
 
 # Convert distutils Windows platform specifiers to CMake -A arguments
@@ -160,7 +159,7 @@ class CMakeBuild(build_ext):
 
 
 setup(
-    version=get_version(os.path.join('src', 'flas', '__init__.py')),
+    version=get_version(os.path.join('src', 'vc_flas', '__init__.py')),
     ext_modules=[CMakeExtension("flas_cpp")],
     cmdclass={
         'build_ext': CMakeBuild,
@@ -168,4 +167,3 @@ setup(
     package_dir={'': 'src'},
     packages=find_packages(where='src'),
 )
-
