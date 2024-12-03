@@ -1,9 +1,12 @@
 from typing import Optional, List, Tuple, Any, Protocol, TypeVar
 
-# import metrics
+from . import metrics
 
 import numpy as np
 import flas_cpp
+
+
+__version__ = "0.1.0"
 
 
 T = TypeVar('T')

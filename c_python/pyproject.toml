@@ -1,0 +1,55 @@
+[build-system]
+requires = [
+    "setuptools",
+    "pybind11==2.12.0",
+    "wheel",
+    "ninja",
+    "cmake>=3.12"
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flas"
+dynamic = ["version"]
+dependencies = [
+    "numpy>=2.1",
+    "psutil",
+]
+requires-python = ">= 3.11"
+authors = [
+    {name = "Bruno Schilling", email = "bruno.schilling@htw-berlin.de"},
+    {name = "Nico Hezel"},
+    {name = "Konstantin Schall"},
+    {name = "Prof. Kai Uwe Barthel"},
+    {name = "Klaus Jung"},
+]
+description = "Python implementation of the Fast Linear Assigment Sorting Algorithm"
+readme = "README.md"
+# license = {file = "LICENSE"}
+keywords = ["sorting", "images"]
+
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+]
+
+[project.urls]
+Homepage = "https://github.com/Visual-Computing/LAS_FLAS/tree/main"
+
+[project.optional-dependencies]
+test = ["pytest>=8.0"]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = ["-ra", "--showlocals", "--strict-markers", "--strict-config"]
+xfail_strict = true
+filterwarnings = [
+    "error",
+    "ignore:(ast.Str|Attribute s|ast.NameConstant|ast.Num) is deprecated:DeprecationWarning:_pytest",
+]
+testpaths = ["tests"]
+
+[tool.cibuildwheel]
+test-command = "pytest {project}"
+test-extras = ["test"]
