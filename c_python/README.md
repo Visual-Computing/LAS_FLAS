@@ -1,6 +1,6 @@
 # Fast Linear Assignment Sorting - FLAS
 
-<img src="images/teaser.png" width="100%" title="" alt="main_pic"></img>
+<img src="../images/teaser.png" width="100%" title="" alt="main_pic"></img>
 
 [FLAS](https://github.com/Visual-Computing/LAS_FLAS/tree/main?tab=readme-ov-file#las-and-flas) allows to sort 2d grids
 based on similarity.
