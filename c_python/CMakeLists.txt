@@ -11,20 +11,14 @@ find_package(pybind11 CONFIG REQUIRED)
 
 # Add library sources
 set(LIBRARY_SOURCES
-	ext/fast_linear_assignment_sorter.cpp
 	ext/fast_linear_assignment_sorter.hpp
-	ext/junker_volgenant_solver.cpp
 	ext/junker_volgenant_solver.hpp
-	ext/map_field.cpp
 	ext/map_field.hpp
 )
 
-# Create the library (STATIC or SHARED, depending on needs)
-add_library(flas_c SHARED ${LIBRARY_SOURCES})
-set_target_properties(flas_c PROPERTIES POSITION_INDEPENDENT_CODE ON)
-
-# Include directories for the library
-target_include_directories(flas_c PUBLIC
+# Create the library
+add_library(flas_c INTERFACE)
+target_include_directories(flas_c INTERFACE
     ${CMAKE_SOURCE_DIR}/ext
 )
 
