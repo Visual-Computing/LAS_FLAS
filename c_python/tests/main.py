@@ -29,12 +29,6 @@ def test_2d():
         labels=query_labels[1:]
     )
 
-    grid = Grid.from_features(features, aspect_ratio=16 / 9)
-    grid_builder.add(
-        features=grid.get_features(),
-        labels=grid.get_labels()
-    )
-
     arrangement = flas(grid_builder.build(freeze_holes=False), wrap=False, radius_decay=0.93)
 
     # sorted_features = arrangement.sort_by_labels(all_features, np.zeros(3, dtype=np.float32))
@@ -99,6 +93,6 @@ def reproduce_bug():
 
 if __name__ == '__main__':
     # test_1d()
-    # test_2d()
-    example_2d()
+    test_2d()
+    # example_2d()
     # reproduce_bug()
