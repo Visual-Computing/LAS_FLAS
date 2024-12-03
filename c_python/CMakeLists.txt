@@ -6,6 +6,10 @@ cmake_policy(SET CMP0148 NEW)
 # Project name and language
 project(flas_cpp LANGUAGES CXX)
 
+if(DEFINED PYTHON_EXECUTABLE)
+	set(Python_EXECUTABLE ${PYTHON_EXECUTABLE})
+endif()
+
 # Include pybind11
 find_package(pybind11 CONFIG REQUIRED)
 
