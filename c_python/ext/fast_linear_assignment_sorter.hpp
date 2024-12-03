@@ -798,7 +798,7 @@ inline void do_swaps(const InternalData *data, int num_swaps) {
 inline int find_swap_positions(const InternalData *data, const int *swap_indices, int num_swap_indices, int swap_area_width,
                          int swap_area_height) {
   // calculate start position of swap area
-  std::uniform_int_distribution pos_dist(0, data->grid_size - 1);
+  std::uniform_int_distribution<int> pos_dist(0, data->grid_size - 1);
   int pos0 = pos_dist(*data->rng);
   int x0 = pos0 % data->columns;
   int y0 = pos0 / data->columns;
@@ -810,7 +810,7 @@ inline int find_swap_positions(const InternalData *data, const int *swap_indices
   if (y_start + swap_area_height > data->rows)
     y_start = data->rows - swap_area_height;
 
-  std::uniform_int_distribution index_dist(0, num_swap_indices - data->num_swap_positions - 1);
+  std::uniform_int_distribution<int> index_dist(0, num_swap_indices - data->num_swap_positions - 1);
   int start_index = num_swap_indices - data->num_swap_positions > 0 ?
                      index_dist(*data->rng)
                      : 0;
