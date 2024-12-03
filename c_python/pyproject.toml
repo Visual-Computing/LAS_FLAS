@@ -9,7 +9,7 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "flas"
+name = "vc_flas"
 dynamic = ["version"]
 dependencies = [
     "numpy>=2.1",

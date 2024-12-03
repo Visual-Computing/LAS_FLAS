@@ -1,2 +1,2 @@
 /dist
-/src/flas.egg-info
+*.egg-info

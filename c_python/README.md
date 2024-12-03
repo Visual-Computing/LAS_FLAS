@@ -23,7 +23,7 @@ based on similarity with the following code:
 
 ```python
 import numpy as np
-from flas import Grid, flas
+from vc_flas import Grid, flas
 
 N, D = 241, 7
 features = np.random.random((N, D))

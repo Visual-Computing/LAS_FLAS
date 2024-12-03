@@ -2,7 +2,7 @@
 
 from PIL import Image
 import numpy as np
-from flas import flas, GridBuilder, Grid
+from vc_flas import flas, GridBuilder, Grid
 
 N_ALL_FEATURES = 10000
 HEIGHT, WIDTH = 64, 64
