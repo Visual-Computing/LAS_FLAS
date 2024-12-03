@@ -1,5 +1,6 @@
-from collections.abc import Mapping
-from typing import Optional, List, Tuple, Any, Callable, Protocol, TypeVar
+from typing import Optional, List, Tuple, Any, Protocol, TypeVar
+
+import metrics
 
 import numpy as np
 import flas_cpp
@@ -567,22 +568,4 @@ def _embed_array(array: np.ndarray, new_size: Tuple[int, int], fill_value: Any =
     return new_array
 
 
-def apply_sorting(features, sorting):
-    """
-    Returns the given features rearranged according to the given sorting.
-
-    :param features: A numpy array with shape (height, width, ...). Will get rearranged depending on sorting.
-    :param sorting: A numpy array with shape (height, width) of any int type. Every position defines the index of the
-                    features that should take this position. For example the sorting
-                        [[0, 1, 2],
-                         [3, 4, 5],
-                         [6, 7, 8]]
-                    would not alter the features at all.
-    :return: The sorted features.
-    """
-    height, width = sorting.shape
-    dim = features.shape[-1]
-    # features as 1d array. Append zero element at the end, so that sorting indices == -1 will access this element.
-    features_1d = np.concatenate([features.reshape(-1, dim), np.zeros_like(features, shape=(1, dim))])
-    sorted_features = features_1d[sorting.flatten()]
-    return sorted_features.reshape(height, width, dim)
+__all__ = ['GridBuilder', 'Grid', 'Arrangement', 'flas', 'metrics',  'Labeler']
