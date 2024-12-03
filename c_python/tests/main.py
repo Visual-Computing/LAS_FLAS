@@ -59,7 +59,7 @@ def test_1d():
     features = np.random.random((HEIGHT * WIDTH, DIM)).astype(np.float32)
 
     arrangement = flas(features, wrap=False)
-    print('sorting.shape:', arrangement.shape)
+    print('sorting.shape:', arrangement.get_size())
     print(arrangement)
 
     sorted_features = arrangement.get_sorted_features()
@@ -73,7 +73,7 @@ def create_grid_by_feature_list(n: int, dim: int, aspect_ratio: float = 1.0, see
     rng = np.random.default_rng(seed)
     features = rng.random((n, dim)).astype(np.float32)
     # print(features, flush=True)
-    return Grid.from_data(features, aspect_ratio=aspect_ratio)
+    return Grid.from_features(features, aspect_ratio=aspect_ratio)
 
 
 def reproduce_bug():
