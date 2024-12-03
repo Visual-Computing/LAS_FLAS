@@ -3,7 +3,6 @@
 #include <pybind11/numpy.h>
 
 #include "fast_linear_assignment_sorter.hpp"
-#include "flas_adapter.hpp"
 
 namespace py = pybind11;
 
@@ -22,6 +21,7 @@ std::tuple<int, py::array_t<int32_t> > flas(
   }
   const ssize_t height = ids_info.shape[0];
   const ssize_t width = ids_info.shape[1];
+  const int32_t* ids_ptr = static_cast<const int32_t *>(ids_info.ptr);
 
   // features
   const py::buffer_info features_info = features.request();
@@ -29,8 +29,8 @@ std::tuple<int, py::array_t<int32_t> > flas(
     const py::array_t<int32_t> tmp({1});
     return std::make_tuple(2, tmp);
   }
-  // const ssize_t n_features = features_info.shape[0];
   const ssize_t dim = features_info.shape[1];
+  const float* features_ptr = static_cast<const float *>(features_info.ptr);
 
   // frozen
   const py::buffer_info frozen_info = frozen.request();
@@ -43,38 +43,59 @@ std::tuple<int, py::array_t<int32_t> > flas(
     const py::array_t<int32_t> result_indices({1});
     return std::make_tuple(4, result_indices);
   }
+  const bool* frozen_ptr = static_cast<bool*>(frozen_info.ptr);
 
-  const GridMap grid_map = init_grid_map_with_ids(static_cast<int>(height), static_cast<int>(width), static_cast<int32_t*>(ids_info.ptr));
-
+  // settings
   const FlasSettings settings(
     wrap, 0.5f, radius_decay, 1, 1.0f, weight_swappable, weight_non_swappable, weight_hole, 1.0f, max_swap_positions
   );
 
+  // random
   RandomEngine rng;
   if (seed == -1)
     rng.seed(std::random_device()());
   else
     rng.seed(seed);
 
-  arrange_with_holes(
-    static_cast<const float *>(features_info.ptr),
-    static_cast<int>(dim),
-    &grid_map,
-    static_cast<const bool *>(frozen_info.ptr),
-    &settings,
-    &rng
-  );
+  // create map fields
+  auto map_fields = static_cast<MapField *>(malloc(height * width * sizeof(MapField)));
+  if (map_fields == nullptr) {
+    std::cerr << "Failed to allocate map_fields.\n" << std::endl;
+    exit(1);
+  }
+
+  for (int y = 0; y < height; y++) {
+    for (int x = 0; x < width; x++) {
+      const int index = x + y * static_cast<int>(width);
+      int id = ids_ptr[index];
+      MapField *current_field = &map_fields[index];
+      const bool field_frozen = frozen_ptr[index];
+      if (id != -1) {
+        const float *const float_feature = features_ptr + (id * dim);
+        init_map_field(current_field, id, float_feature, !field_frozen);
+      } else {
+        init_invalid_map_field(current_field, !field_frozen);
+      }
+    }
+  }
+  // ----------------------------------------
+  do_sorting_full(map_fields, static_cast<int>(dim), static_cast<int>(width), static_cast<int>(height), &settings, &rng);
 
   const py::array_t<int32_t> result_indices({height, width});
   const py::buffer_info result_indices_info = result_indices.request();
 
   const auto res_ptr = static_cast<int32_t *>(result_indices_info.ptr);
 
+  // convert back --------------------------
   for (int y = 0; y < height; y++) {
     for (int x = 0; x < width; x++) {
-      res_ptr[y * width + x] = get(&grid_map, x, y);
+      const MapField map_field = map_fields[x + y * width];
+      res_ptr[y * width + x] = map_field.id;
     }
   }
+
+  free(map_fields);
+  // ---------------------------------------
 
   return std::make_tuple(0, result_indices);
 }

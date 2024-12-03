@@ -29,7 +29,7 @@ def test_2d():
         labels=query_labels[1:]
     )
 
-    arrangement = flas(grid_builder.build(freeze_holes=False), wrap=False, radius_decay=0.93, seed=45)
+    arrangement = flas(grid_builder.build(freeze_holes=False), wrap=False, radius_decay=0.93)
 
     # sorted_features = arrangement.sort_by_labels(all_features, np.zeros(3, dtype=np.float32))
     # sorted_features = np.array(sorted_features)
