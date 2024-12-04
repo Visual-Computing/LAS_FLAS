@@ -10,6 +10,7 @@ This directory contains the python implementation and shows how to use it.
 - Implementation of [FLAS](https://github.com/Visual-Computing/LAS_FLAS/tree/main?tab=readme-ov-file#las-and-flas) and [DPQ](https://github.com/Visual-Computing/LAS_FLAS/tree/main?tab=readme-ov-file#distance-preservation-quality-dpq) (and other metrics to quantify an arrangement)
 - Allows frozen fields
 - Allows empty fields (holes)
+- Deterministic random when seeded
 - Installable via PyPI
 - Easy to use python interface with numpy support
 - Fast implementation in C++
@@ -46,10 +47,10 @@ sorted_features = arrangement.get_sorted_features()
 height, width, dim = sorted_features.shape
 assert (height, width, dim) == (16, 16, 3)
 
-show_image(sorted_features)
+# show_image(sorted_features)
 ```
 
-### Working with Arrangements / Labels
+### Working with Arrangements and Labels
 Often you need not only the features sorted, but other objects (like images for example) as well.
 See [this example](https://github.com/Visual-Computing/LAS_FLAS/blob/feat/c_python/c_python/examples/using_arrangements.py) for more information on that.
 

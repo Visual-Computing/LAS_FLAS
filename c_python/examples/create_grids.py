@@ -55,3 +55,9 @@ def create_grid_with_builder():
 
     grid = builder.build(freeze_holes=False)
     print(grid.get_size())
+
+
+if __name__ == '__main__':
+    create_grid_from_features()
+    create_grid_from_grid_features()
+    create_grid_with_builder()

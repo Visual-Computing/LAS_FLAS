@@ -1,4 +1,4 @@
-from typing import Optional, List, Tuple, Any, Protocol, TypeVar, Sequence, Mapping, Callable
+from typing import Optional, List, Tuple, Any, Sequence, Mapping, Callable
 
 from . import metrics
 
@@ -7,10 +7,6 @@ import flas_cpp
 
 
 __version__ = "0.1.0"
-
-
-T = TypeVar('T')
-K = TypeVar('K')
 
 
 class Grid:
@@ -217,6 +213,9 @@ class GridBuilder:
         if features.ndim != 2:
             raise ValueError('features must have shape (n, d) but got: {}'.format(features.shape))
 
+        if features.dtype != np.float32:
+            features = features.astype(np.float32)
+
         labels = self.labeler.update_or_create(labels, features.shape)
         labels = self._check_valid_labels(features, labels)
 
@@ -275,6 +274,9 @@ class GridBuilder:
                 raise ValueError('Position is already taken')
 
         # save features
+        if features.dtype != np.float32:
+            features = features.astype(np.float32)
+
         self.grid_labels[tuple(pos.T)] = labels
         self.grid_features[tuple(pos.T)] = features
         self.frozen[tuple(pos.T)] = frozen

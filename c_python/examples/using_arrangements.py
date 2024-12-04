@@ -73,3 +73,8 @@ def working_with_labels():
 
     # we can use the same way to get a two-dimensional list of image-paths that are now sorted!
     sorted_image_paths: List[List[str]] = arrangement.sort_by_labels(all_images)
+
+
+if __name__ == '__main__':
+    get_sorted_features()
+    working_with_labels()
