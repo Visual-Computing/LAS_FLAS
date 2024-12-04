@@ -25,7 +25,7 @@ authors = [
 ]
 description = "Python implementation of the Fast Linear Assigment Sorting Algorithm"
 readme = "README.md"
-# license = {file = "LICENSE"}
+license = {file = "LICENSE"}
 keywords = ["sorting", "images"]
 
 classifiers = [
