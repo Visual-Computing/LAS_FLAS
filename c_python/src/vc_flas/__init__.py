@@ -65,6 +65,20 @@ class Grid:
         """
         return np.prod(self.ids.shape) - self.get_num_features()
 
+    def get_holes(self) -> np.ndarray:
+        """
+        :returns: A two-dimensional numpy bool array with shape (h, w). holes[y, x] is True if the feature at position
+                  (y, x) is a hole.
+        """
+        return np.equal(self.ids, -1)
+
+    def get_valid(self) -> np.ndarray:
+        """
+        :returns: A two-dimensional numpy bool array with shape (h, w). valid[y, x] is True if the feature at position
+                  (y, x) is not a hole.
+        """
+        return np.not_equal(self.ids, -1)
+
     @classmethod
     def from_grid_features(cls, features: np.ndarray):
         """
@@ -431,17 +445,20 @@ class GridBuilder:
 
 
 class Arrangement:
-    def __init__(self, grid: Grid, sorting: np.ndarray):
+    def __init__(self, grid: Grid, sorting: np.ndarray, wrap: bool):
         """
         Creates a new arrangement.
         :param grid: The grid that was sorted.
-        :param sorting: The sorting of the grid with shape (h, w).
+        :param sorting: The sorting of the grid with shape (h, w). sorting[y, x] contains the index of the feature that
+                        should be at position (y, x), while -1 indicates a hole.
         """
         if sorting.shape != grid.ids.shape[:2]:
             raise ValueError('sorting must have shape {} but got: {}'.format(grid.ids, sorting.shape))
 
         self.grid = grid
         self.sorting = sorting
+        self.wrap = wrap
+        self.sorted_features: np.ndarray | None = None  # Use for caching
 
     def get_size(self) -> Tuple[int, int]:
         """
@@ -455,14 +472,17 @@ class Arrangement:
         :param hole_value: Scalar or numpy array with shape (d,) defining the value to fill holes with.
         :return: A numpy array with shape (h, w, d) containing the sorted features.
         """
-        dim = self.grid.features.shape[-1]
-        if np.isscalar(hole_value):
-            hole_value = np.full(dim, hole_value)
-        hole_value = hole_value.reshape(1, dim)
+        if self.sorted_features is None:
+            dim = self.grid.features.shape[-1]
+            if np.isscalar(hole_value):
+                hole_value = np.full(dim, hole_value)
+            hole_value = hole_value.reshape(1, dim)
 
-        # add hole feature to end of features, so that sorting of -1 accesses this feature
-        features = np.concatenate([self.grid.features, hole_value])
-        return features[self.sorting.flatten()].reshape(*self.sorting.shape, dim)
+            # add hole feature to end of features, so that sorting of -1 accesses this feature
+            features = np.concatenate([self.grid.features, hole_value])
+            self.sorted_features = features[self.sorting.flatten()].reshape(*self.sorting.shape, dim)
+
+        return self.sorted_features
 
     def get_sorted_labels(self) -> np.ndarray:
         """
@@ -509,6 +529,30 @@ class Arrangement:
                     line_result.append(label_to_obj[label])
             result.append(line_result)
         return result
+
+    def get_holes(self) -> np.ndarray:
+        """
+        :return: a two-dimensional numpy bool array with shape (h, w) containing True for holes and False for valid
+                 positions.
+        """
+        return np.equal(self.sorting, -1)
+
+    def get_valid(self) -> np.ndarray:
+        """
+        :return: a two-dimensional numpy bool array with shape (h, w) containing True for valid positions and False for
+                 holes.
+        """
+        return np.not_equal(self.sorting, -1)
+
+    def get_distance_preservation_quality(self) -> float:
+        sorted_features = self.get_sorted_features()
+        # TODO: add holes
+        return metrics.distance_preservation_quality(sorted_features, self.wrap)
+
+    def get_mean_neighbor_distance(self) -> float:
+        sorted_features = self.get_sorted_features()
+        valid = self.get_valid()
+        return metrics.mean_neighbor_distance(sorted_features, valid, self.wrap)
 
 
 def flas(grid: Grid | np.ndarray, wrap: bool = False, radius_decay: float = 0.93, max_swap_positions: int = 9,
@@ -558,7 +602,7 @@ def flas(grid: Grid | np.ndarray, wrap: bool = False, radius_decay: float = 0.93
     if code != 0:
         raise RuntimeError('FLAS failed with error code {}'.format(code))
 
-    return Arrangement(grid, result)
+    return Arrangement(grid, result, wrap)
 
 
 def _embed_array(array: np.ndarray, new_size: Tuple[int, int], fill_value: Any = 0) -> np.ndarray:

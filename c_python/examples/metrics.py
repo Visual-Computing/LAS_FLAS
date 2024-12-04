@@ -15,15 +15,16 @@ def create_feature_grid_arrangement(wrap: bool):
 def calc_metrics():
     wrap = False
     features, grid, arrangement = create_feature_grid_arrangement(wrap)
-    sorted_features = arrangement.get_sorted_features()
+
+    arrangement.get_sorted_features()
 
     start_time_dpq = time.perf_counter()
-    sorted_dpq = metrics.distance_preservation_quality(sorted_features, wrap=wrap)
+    sorted_dpq = arrangement.get_distance_preservation_quality()
     random_dpq = metrics.distance_preservation_quality(features, wrap=wrap)
     end_time_dpq = time.perf_counter()
 
     start_time_mnd = time.perf_counter()
-    sorted_mnd = metrics.mean_neighbor_distance(sorted_features, wrap=wrap)
+    sorted_mnd = arrangement.get_mean_neighbor_distance()
     random_mnd = metrics.mean_neighbor_distance(features, wrap=wrap)
     end_time_mnd = time.perf_counter()
 
