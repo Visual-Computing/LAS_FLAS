@@ -62,6 +62,10 @@ def mean_neighbor_distance(
     return sum_x + sum_y
 
 
+def ratio_to_optimum(features: np.ndarray, wrap: bool = False):
+    pass
+
+
 def distance_preservation_quality(sorted_x: np.ndarray, wrap: bool = False, p: int = 2):
     """
     Computes the Distance Preservation Quality DPQ_p(S)
