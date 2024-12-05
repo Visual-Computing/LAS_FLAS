@@ -119,7 +119,7 @@ def distance_preservation_quality(sorted_x: np.ndarray, wrap: bool = False, p: i
     flat_x = sorted_x.reshape((n, -1))
 
     # compute matrix of Euclidean distances in the high dimensional space
-    dists_hd = np.sqrt(_squared_l2_distance(flat_x, flat_x))
+    dists_hd = _l2_distance(flat_x, flat_x)
 
     # sort HD distance matrix rows in ascending order (first value is always 0 zero now)
     sorted_d = np.sort(dists_hd, axis=1)
@@ -131,10 +131,10 @@ def distance_preservation_quality(sorted_x: np.ndarray, wrap: bool = False, p: i
     dists_spatial = _compute_spatial_distances_for_grid(grid_shape, wrap)
 
     # sort rows of HD distances by the values of spatial distances
-    sorted_hd_by_2_d = _sort_hd_dists_by_2d_dists(dists_hd, dists_spatial)
+    sorted_hd_by_2d = _sort_hd_dists_by_2d_dists(dists_hd, dists_spatial)
 
     # get delta DP_k values
-    delta_dp_k_2d = _get_distance_preservation_gain(sorted_hd_by_2_d, mean_d)
+    delta_dp_k_2d = _get_distance_preservation_gain(sorted_hd_by_2d, mean_d)
     delta_dp_k_hd = _get_distance_preservation_gain(sorted_d, mean_d)
 
     # compute p norm of DP_k values
