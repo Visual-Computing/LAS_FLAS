@@ -58,7 +58,15 @@ See [this example](https://github.com/Visual-Computing/LAS_FLAS/blob/feat/c_pyth
 There are more ways to initialize grids. See [here](https://github.com/Visual-Computing/LAS_FLAS/blob/feat/c_python/c_python/examples/create_grids.py) for some examples.
 
 ### Metrics
-TODO
+Once you have sorted your features, there are some methods to evaluate the
+quality of the arrangements.
+```python
+arrangement = flas(grid)
+
+print(arrangement.get_distance_preservation_quality())
+print(arrangement.get_mean_neighbor_distance())
+print(arrangement.get_distance_ratio_to_optimum())
+```
 
 ## About
 **Kai Barthel, Nico Hezel, Klaus Jung, Bruno Schilling and Konstantin Schall**
