@@ -29,7 +29,7 @@ def calc_metrics():
     end_time_mnd = time.perf_counter()
 
     start_time_rto = time.perf_counter()
-    sorted_rto = metrics.distance_ratio_to_optimum(arrangement.get_sorted_features(), wrap=wrap)
+    sorted_rto = arrangement.get_distance_ratio_to_optimum()
     random_rto = metrics.distance_ratio_to_optimum(features, wrap=wrap)
     end_time_rto = time.perf_counter()
 

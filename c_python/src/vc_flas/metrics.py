@@ -10,7 +10,7 @@ def mean_neighbor_distance(
     If holes are present, they do not contribute to the distance.
 
     :param sorted_features: features array with shape (h, w, d).
-    :param valid: None or array with shape (h, w), where each has a 1 except holes having a 0.
+    :param valid: None or array with shape (h, w), where each valid field has a 1 except holes having a 0.
     :param wrap: If True, distances are calculated for opposite edges of the grid as well.
     :param ord: The p-norm to use. Defaults to L2-norm.
     :param reduce: The operation to use for reduction. Either "sum" or "mean".
@@ -72,12 +72,13 @@ def mean_neighbor_distance(
     return diff_sum
 
 
-def distance_ratio_to_optimum(features: np.ndarray, wrap: bool = False) -> float:
+def distance_ratio_to_optimum(features: np.ndarray, valid: np.ndarray | None = None, wrap: bool = False) -> float:
     """
     Calculates the ratio between the given sorting and a theoretical optimal sorting (that is, all 4 neighbors in the
     sorting are the closest neighbors in the dataset).
 
     :param features: Numpy array with shape (h, w, d) where features[y, x] is a feature vector at that position.
+    :param valid: None or array with shape (h, w), where each valid field has a 1 except holes having a 0.
     :param wrap: Whether distances between opposite edges of the grid should be considered.
     :return: Calculates the ratio between the given sorting and a theoretical optimal sorting
     """
@@ -85,7 +86,7 @@ def distance_ratio_to_optimum(features: np.ndarray, wrap: bool = False) -> float
         raise ValueError("features must have shape (h, w, d), got: ".format(features.shape))
 
     mean_optimal_distance = _get_impossible_optimal_distance(features.reshape(-1, features.shape[-1]))
-    mean_real_distance = mean_neighbor_distance(features, wrap=wrap, reduce='mean')
+    mean_real_distance = mean_neighbor_distance(features, valid=valid, wrap=wrap, reduce='mean')
 
     return mean_optimal_distance / mean_real_distance
 

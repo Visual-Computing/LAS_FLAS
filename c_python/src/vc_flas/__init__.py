@@ -554,6 +554,11 @@ class Arrangement:
         valid = self.get_valid()
         return metrics.mean_neighbor_distance(sorted_features, valid, self.wrap)
 
+    def get_distance_ratio_to_optimum(self) -> float:
+        sorted_features = self.get_sorted_features()
+        valid = self.get_valid()
+        return metrics.distance_ratio_to_optimum(sorted_features, valid, self.wrap)
+
 
 def flas(grid: Grid | np.ndarray, wrap: bool = False, radius_decay: float = 0.93, max_swap_positions: int = 9,
          weight_swappable: float = 1.0, weight_non_swappable: float = 100.0, weight_hole: float = 0.01,
