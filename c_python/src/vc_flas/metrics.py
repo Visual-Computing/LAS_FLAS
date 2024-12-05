@@ -83,24 +83,26 @@ def distance_ratio_to_optimum(features: np.ndarray, wrap: bool = False) -> float
     """
     if features.ndim != 3:
         raise ValueError("features must have shape (h, w, d), got: ".format(features.shape))
-    dim = features.shape[-1]
 
-    # --- calculate optimal distance ---
+    mean_optimal_distance = _get_impossible_optimal_distance(features)
+    mean_real_distance = mean_neighbor_distance(features, wrap=wrap, reduce='mean')
+
+    return mean_optimal_distance / mean_real_distance
+
+
+def _get_impossible_optimal_distance(features: np.ndarray):
+    """
+    Calculates a theoretical optimal sorting in which all 4 neighbors are the closest neighbors in the dataset.
+
+    :param features: Numpy array with shape (h, w, d) where features[y, x] is a feature vector at that position.
+    """
+    dim = features.shape[-1]
     # distances contains (h*w, h*w) distances. distances[i, j] contains the distance between feature[i] and feature[j]
     distances = _l2_distance(features.reshape(-1, dim), features.reshape(-1, dim))
     distances = _remove_diag(distances)  # remove distances[i, i] == 0
-
     closest_dists = np.partition(distances, 4, axis=1)[:, :4]
-    print(closest_dists)
-
     mean_optimal_distance = np.mean(closest_dists)
-
-    # --- calculate present distance ---
-    mean_real_distance = mean_neighbor_distance(features, wrap=wrap, reduce='mean')
-
-    print('opt sum:', mean_optimal_distance, ' real sum:', mean_real_distance)
-
-    return mean_optimal_distance / mean_real_distance
+    return mean_optimal_distance
 
 
 def distance_preservation_quality(sorted_x: np.ndarray, wrap: bool = False, p: int = 2):

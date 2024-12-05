@@ -59,7 +59,7 @@ def create_feature_plane(size):
 
 
 def ratio_to_opt_best_case():
-    wrap = False
+    wrap = True
     features = create_feature_plane((20, 20))
     dist1 = np.linalg.norm(features[2, 2] - features[2, 3])
     dist2 = np.linalg.norm(features[2, 2] - features[3, 2])
@@ -73,5 +73,5 @@ def ratio_to_opt_best_case():
 
 if __name__ == '__main__':
     # calc_ratio_to_opt()
-    ratio_to_opt_best_case()
-    # calc_metrics()
+    # ratio_to_opt_best_case()
+    calc_metrics()
