@@ -901,7 +901,7 @@ inline void do_sorting_full(
   // optimize narrow grids?
   int optimize_narrow = settings->optimize_narrow_grids;
   if (optimize_narrow == 1) {
-    float aspect_ratio = (float)columns / (float)rows;
+    float aspect_ratio = static_cast<float>(columns) / static_cast<float>(rows);
     if (aspect_ratio > 0.1f) {
       optimize_narrow = 0;
     }
@@ -916,11 +916,11 @@ inline void do_sorting_full(
     copy_feature_vectors_to_som(&data, settings);
 
     int radius = max(1, static_cast<int>(std::round(rad))); // set the radius
-    int radius_x = max(1, min(columns / 2, radius));
-    int radius_y = max(1, min(rows / 2, radius));
+    int radius_x;
+    int radius_y;
     if (optimize_narrow) {
       // SSM6 variant
-      radius_x = max((int)(columns * 0.8f), columns-2); // MIN(nX-1, p->radius);
+      radius_x = max(static_cast<int>(static_cast<float>(columns) * 0.8f), columns-2); // MIN(nX-1, p->radius);
       /* TODO: take this?
       if (rad < 1.5f)
         radius_x = 1;
