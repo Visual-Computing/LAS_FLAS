@@ -12,6 +12,7 @@
 #include "map_field.hpp"
 #include "junker_volgenant_solver.hpp"
 
+namespace py = pybind11;
 typedef std::mt19937 RandomEngine;
 constexpr int QUANT = 256;
 
@@ -939,6 +940,8 @@ inline void do_sorting_full(
     float progress = static_cast<float>(iteration_counter) / static_cast<float>(num_iterations);
     if (callback(progress))
       break;
+    if (PyErr_CheckSignals() != 0)
+                throw py::error_already_set();
   } while (rad > settings->radius_end);
 
   free_internal_data(&data);
