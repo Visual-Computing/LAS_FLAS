@@ -84,8 +84,14 @@ def distance_ratio_to_optimum(features: np.ndarray, valid: np.ndarray | None = N
     """
     if features.ndim != 3:
         raise ValueError("features must have shape (h, w, d), got: ".format(features.shape))
+    if valid.shape != features.shape[:-1]:
+        raise ValueError("holes must have same size as features (h, w) = {}, got: {}".format(
+                features.shape[:-1], valid.shape))
 
-    mean_optimal_distance = _get_impossible_optimal_distance(features.reshape(-1, features.shape[-1]))
+    valid_flat = valid.reshape(-1).astype(bool)
+    features_flat = features.reshape(-1, features.shape[-1])[valid_flat]
+
+    mean_optimal_distance = _get_impossible_optimal_distance(features_flat)
     mean_real_distance = mean_neighbor_distance(features, valid=valid, wrap=wrap, reduce='mean')
 
     return mean_optimal_distance / mean_real_distance
