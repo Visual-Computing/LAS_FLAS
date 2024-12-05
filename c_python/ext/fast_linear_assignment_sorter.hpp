@@ -907,8 +907,6 @@ inline void do_sorting_full(
     }
   }
 
-  printf("optimize narrow: %d\n", optimize_narrow);
-
   const InternalData data = create_internal_data(map_fields, columns, rows, dim, settings->max_swap_positions, rng);
 
   // try to improve the map

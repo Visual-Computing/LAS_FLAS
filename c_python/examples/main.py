@@ -40,9 +40,21 @@ def try_narrow():
     arrangement = flas(grid, radius_decay=0.93)
 
     sorted_features = arrangement.get_sorted_features()
-    height, width, dim = sorted_features.shape
 
-    image = Image.fromarray((sorted_features[:, :, :3] * 255).astype(np.uint8))
+    image = Image.fromarray((sorted_features * 255).astype(np.uint8))
+    image.save('images/image1.png', 'PNG')
+
+
+def try_normal():
+    h, w, d = 124, 124, 3
+    features = np.random.random((h, w, d))
+    grid = Grid.from_grid_features(features)
+
+    arrangement = flas(grid, radius_decay=0.93)
+
+    sorted_features = arrangement.get_sorted_features()
+
+    image = Image.fromarray((sorted_features * 255).astype(np.uint8))
     image.save('images/image1.png', 'PNG')
 
 
@@ -82,24 +94,9 @@ def create_grid_by_feature_list(n: int, dim: int, aspect_ratio: float = 1.0, see
     return Grid.from_features(features, aspect_ratio=aspect_ratio)
 
 
-def reproduce_bug():
-    dim = 3
-    n = 7
-    aspect_ratio = 1.0
-    for _ in range(10):
-        grid = create_grid_by_feature_list(n, dim, aspect_ratio, seed=1)
-        print(n, aspect_ratio, grid.get_size())
-        result = flas(grid)
-        pixels = result.get_sorted_features()
-        image = Image.fromarray((pixels * 255).astype(np.uint8))
-        image.save('images/test.png', 'PNG')
-
-        print('done')
-
-
 if __name__ == '__main__':
     # test_1d()
     # create_progress()
-    try_narrow()
+    # try_narrow()
     # example_2d()
-    # reproduce_bug()
+    try_normal()
