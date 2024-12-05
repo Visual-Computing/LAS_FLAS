@@ -2,7 +2,8 @@ import numpy as np
 
 
 def mean_neighbor_distance(
-        sorted_features: np.ndarray, valid: np.ndarray | None = None, wrap: bool = False, ord: int = 2
+        sorted_features: np.ndarray, valid: np.ndarray | None = None, wrap: bool = False, ord: int = 2,
+        reduce: str = 'mean'
 ) -> float:
     """
     Calculate the mean squared distances between neighbors of sorted features.
@@ -12,10 +13,14 @@ def mean_neighbor_distance(
     :param valid: None or array with shape (h, w), where each has a 1 except holes having a 0.
     :param wrap: If True, distances are calculated for opposite edges of the grid as well.
     :param ord: The p-norm to use. Defaults to L2-norm.
+    :param reduce: The operation to use for reduction. Either "sum" or "mean".
     :return:
     """
     if sorted_features.ndim != 3:
         raise ValueError("sorted_features must have shape (h, w, d), got: ".format(sorted_features.shape))
+
+    if reduce not in ('mean', 'sum'):
+        raise ValueError("reduce must be either 'mean' or 'sum', got: {}".format(reduce))
 
     if wrap:
         x_orig = sorted_features
@@ -53,17 +58,49 @@ def mean_neighbor_distance(
 
     sum_x = 0
     if num_present_x:
-        sum_x = np.sum(diffs_x) / num_present_x
+        sum_x = np.sum(diffs_x)
 
     sum_y = 0
     if num_present_y:
-        sum_y = np.sum(diffs_y) / num_present_y
+        sum_y = np.sum(diffs_y)
 
-    return sum_x + sum_y
+    diff_sum = sum_x + sum_y
+    if reduce == 'mean':
+        if num_present_x + num_present_y > 1:
+            diff_sum /= num_present_x + num_present_y
+
+    return diff_sum
 
 
-def ratio_to_optimum(features: np.ndarray, wrap: bool = False):
-    pass
+def distance_ratio_to_optimum(features: np.ndarray, wrap: bool = False) -> float:
+    """
+    Calculates the ratio between the given sorting and a theoretical optimal sorting (that is, all 4 neighbors in the
+    sorting are the closest neighbors in the dataset).
+
+    :param features: Numpy array with shape (h, w, d) where features[y, x] is a feature vector at that position.
+    :param wrap: Whether distances between opposite edges of the grid should be considered.
+    :return: Calculates the ratio between the given sorting and a theoretical optimal sorting
+    """
+    if features.ndim != 3:
+        raise ValueError("features must have shape (h, w, d), got: ".format(features.shape))
+    dim = features.shape[-1]
+
+    # --- calculate optimal distance ---
+    # distances contains (h*w, h*w) distances. distances[i, j] contains the distance between feature[i] and feature[j]
+    distances = _l2_distance(features.reshape(-1, dim), features.reshape(-1, dim))
+    distances = _remove_diag(distances)  # remove distances[i, i] == 0
+
+    closest_dists = np.partition(distances, 4, axis=1)[:, :4]
+    print(closest_dists)
+
+    mean_optimal_distance = np.mean(closest_dists)
+
+    # --- calculate present distance ---
+    mean_real_distance = mean_neighbor_distance(features, wrap=wrap, reduce='mean')
+
+    print('opt sum:', mean_optimal_distance, ' real sum:', mean_real_distance)
+
+    return mean_optimal_distance / mean_real_distance
 
 
 def distance_preservation_quality(sorted_x: np.ndarray, wrap: bool = False, p: int = 2):
@@ -191,6 +228,17 @@ def _squared_l2_distance(q, p):
     qs = np.sum(np.square(q), axis=-1, keepdims=True)
     distance = ps - 2*np.matmul(p, q.T) + qs.T
     return np.maximum(distance, 0)
+
+
+def _l2_distance(q, p):
+    return np.sqrt(_squared_l2_distance(q, p))
+
+
+def _remove_diag(a):
+    m = a.shape[0]
+    strided = np.lib.stride_tricks.as_strided
+    s0, s1 = a.strides
+    return strided(a.ravel()[1:], shape=(m-1, m), strides=(s0+s1, s1)).reshape(m, -1)
 
 
 __all__ = ['distance_preservation_quality', 'mean_neighbor_distance']
