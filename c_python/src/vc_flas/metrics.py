@@ -84,7 +84,7 @@ def distance_ratio_to_optimum(features: np.ndarray, wrap: bool = False) -> float
     if features.ndim != 3:
         raise ValueError("features must have shape (h, w, d), got: ".format(features.shape))
 
-    mean_optimal_distance = _get_impossible_optimal_distance(features)
+    mean_optimal_distance = _get_impossible_optimal_distance(features.reshape(-1, features.shape[-1]))
     mean_real_distance = mean_neighbor_distance(features, wrap=wrap, reduce='mean')
 
     return mean_optimal_distance / mean_real_distance
@@ -92,17 +92,16 @@ def distance_ratio_to_optimum(features: np.ndarray, wrap: bool = False) -> float
 
 def _get_impossible_optimal_distance(features: np.ndarray):
     """
-    Calculates a theoretical optimal sorting in which all 4 neighbors are the closest neighbors in the dataset.
+    Calculates the mean distance to four neighbors in a theoretical optimal sorting in which all 4 neighbors are the
+    closest neighbors in the dataset.
 
-    :param features: Numpy array with shape (h, w, d) where features[y, x] is a feature vector at that position.
+    :param features: Numpy array with shape (n, d) where features[i] is a feature vector.
     """
-    dim = features.shape[-1]
-    # distances contains (h*w, h*w) distances. distances[i, j] contains the distance between feature[i] and feature[j]
-    distances = _l2_distance(features.reshape(-1, dim), features.reshape(-1, dim))
+    # distances contains (n, n) distances. distances[i, j] contains the distance between feature[i] and feature[j]
+    distances = _l2_distance(features, features)
     distances = _remove_diag(distances)  # remove distances[i, i] == 0
     closest_dists = np.partition(distances, 4, axis=1)[:, :4]
-    mean_optimal_distance = np.mean(closest_dists)
-    return mean_optimal_distance
+    return np.mean(closest_dists)
 
 
 def distance_preservation_quality(sorted_x: np.ndarray, wrap: bool = False, p: int = 2):
@@ -243,4 +242,4 @@ def _remove_diag(a):
     return strided(a.ravel()[1:], shape=(m-1, m), strides=(s0+s1, s1)).reshape(m, -1)
 
 
-__all__ = ['distance_preservation_quality', 'mean_neighbor_distance']
+__all__ = ['distance_preservation_quality', 'mean_neighbor_distance', 'distance_ratio_to_optimum']
