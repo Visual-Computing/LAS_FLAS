@@ -602,7 +602,7 @@ def flas(
 
     size = grid.get_size()
     if size[0] < 2 or size[1] < 2:
-        raise ValueError('Grid must have at least two features per dimension, but got: {}'.format(size))
+        raise ValueError('Grid must have at least size (2, 2), but got: {}'.format(size))
 
     # TODO: return identity sorting
     if np.all(grid.frozen):
