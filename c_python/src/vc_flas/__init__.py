@@ -560,9 +560,11 @@ class Arrangement:
         return metrics.distance_ratio_to_optimum(sorted_features, valid, self.wrap)
 
 
-def flas(grid: Grid | np.ndarray, wrap: bool = False, radius_decay: float = 0.93, max_swap_positions: int = 9,
-         weight_swappable: float = 1.0, weight_non_swappable: float = 100.0, weight_hole: float = 0.01,
-         seed: int = -1) -> Arrangement:
+def flas(
+        grid: Grid | np.ndarray, wrap: bool = False, radius_decay: float = 0.93,
+        callback: Callable[[float], bool] | None = None, optimize_narrow_grids: int = 1, max_swap_positions: int = 9,
+        weight_swappable: float = 1.0, weight_non_swappable: float = 100.0, weight_hole: float = 0.01, seed: int = -1
+) -> Arrangement:
     """
     Sorts the given features into a 2d plane, so that similar features are close together.
     See https://github.com/Visual-Computing/LAS_FLAS for details.
@@ -571,6 +573,13 @@ def flas(grid: Grid | np.ndarray, wrap: bool = False, radius_decay: float = 0.93
     :param wrap: If True, the features on the right side will be similar to features on the left side as well as
                  features on top of the plane will be similar to features on the bottom.
     :param radius_decay: How much should the filter radius decay at each iteration.
+    :param callback: A callback that accepts a float and returns a boolean. The float is the current progress of the
+                     algorithm between 0.0 and 1.0. If True is returned, the algorithm stops.
+    :param optimize_narrow_grids: Four narrow grids it can be useful to force rows to be more similar. You can choose
+                                  one of the following options:
+                                  0: no optimization
+                                  1: optimization for aspect_ratios < 0.1 (ten times more rows than columns)
+                                  2: always optimize
     :param max_swap_positions: Number of possible swaps to hand over to solver. Should be a square number.
     :param weight_swappable:
     :param weight_non_swappable:
@@ -599,10 +608,16 @@ def flas(grid: Grid | np.ndarray, wrap: bool = False, radius_decay: float = 0.93
     if np.all(grid.frozen):
         raise ValueError('All features are frozen. Cannot sort features.')
 
-    code, result = flas_cpp.flas(
-        grid.features, grid.ids, grid.frozen, wrap, radius_decay, weight_swappable, weight_non_swappable, weight_hole,
-        max_swap_positions, seed
-    )
+    if callback is None:
+        code, result = flas_cpp.flas_no_callback(
+            grid.features, grid.ids, grid.frozen, wrap, radius_decay, weight_swappable, weight_non_swappable,
+            weight_hole, max_swap_positions, seed, optimize_narrow_grids
+        )
+    else:
+        code, result = flas_cpp.flas(
+            grid.features, grid.ids, grid.frozen, wrap, radius_decay, weight_swappable, weight_non_swappable,
+            weight_hole, max_swap_positions, seed, optimize_narrow_grids, callback
+        )
 
     if code != 0:
         raise RuntimeError('FLAS failed with error code {}'.format(code))

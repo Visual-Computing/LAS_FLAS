@@ -1,6 +1,8 @@
 #include <iostream>
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
+// ReSharper disable once CppUnusedIncludeDirective
+#include <pybind11/functional.h>
 
 #include "fast_linear_assignment_sorter.hpp"
 
@@ -11,7 +13,7 @@ std::tuple<int, py::array_t<int32_t> > flas(
   const py::array_t<int32_t, py::array::c_style> &ids,
   const py::array_t<bool, py::array::c_style> &frozen,
   const bool wrap, float radius_decay, float weight_swappable, float weight_non_swappable, float weight_hole,
-  int max_swap_positions, int seed
+  int max_swap_positions, int seed, int optimize_narrow_grids, const std::function<bool(float)>& callback
 ) {
   // ids
   const py::buffer_info ids_info = ids.request();
@@ -47,7 +49,8 @@ std::tuple<int, py::array_t<int32_t> > flas(
 
   // settings
   const FlasSettings settings(
-    wrap, 0.5f, radius_decay, 1, 1.0f, weight_swappable, weight_non_swappable, weight_hole, 1.0f, max_swap_positions
+    wrap, 0.5f, radius_decay, 1, 1.0f, weight_swappable, weight_non_swappable, weight_hole, 1.0f, max_swap_positions,
+    optimize_narrow_grids
   );
 
   // random
@@ -79,7 +82,9 @@ std::tuple<int, py::array_t<int32_t> > flas(
     }
   }
   // ----------------------------------------
-  do_sorting_full(map_fields, static_cast<int>(dim), static_cast<int>(width), static_cast<int>(height), &settings, &rng);
+  do_sorting_full(
+    map_fields, static_cast<int>(dim), static_cast<int>(width), static_cast<int>(height), &settings, &rng, callback
+  );
 
   const py::array_t<int32_t> result_indices({height, width});
   const py::buffer_info result_indices_info = result_indices.request();
@@ -99,6 +104,20 @@ std::tuple<int, py::array_t<int32_t> > flas(
 
   return std::make_tuple(0, result_indices);
 }
+
+std::tuple<int, py::array_t<int32_t> > flas_no_callback(
+  const py::array_t<float, py::array::c_style> &features,
+  const py::array_t<int32_t, py::array::c_style> &ids,
+  const py::array_t<bool, py::array::c_style> &frozen,
+  const bool wrap, float radius_decay, float weight_swappable, float weight_non_swappable, float weight_hole,
+  int max_swap_positions, int seed, int optimize_narrow_grids
+) {
+  return flas(
+    features, ids, frozen, wrap, radius_decay, weight_swappable, weight_non_swappable, weight_hole, max_swap_positions,
+    seed, optimize_narrow_grids, [](float) { return false; }
+  );
+}
+
 
 std::tuple<uint32_t, uint32_t> get_size(const size_t n_features, const float aspect_ratio) {
 	uint32_t height = static_cast<uint32_t>(std::sqrt(static_cast<float>(n_features) / aspect_ratio));
@@ -137,5 +156,6 @@ std::tuple<uint32_t, uint32_t> get_optimal_grid_size(
 
 PYBIND11_MODULE(flas_cpp, m) {
   m.def("flas", &flas);
+  m.def("flas_no_callback", &flas_no_callback);
   m.def("get_optimal_grid_size", &get_optimal_grid_size);
 }

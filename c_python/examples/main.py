@@ -2,39 +2,45 @@
 
 from PIL import Image
 import numpy as np
-from vc_flas import flas, GridBuilder, Grid
+from vc_flas import flas, Grid
 
 N_ALL_FEATURES = 10000
-HEIGHT, WIDTH = 64, 64
+HEIGHT, WIDTH = 256, 256
 QUERY_SIZE = HEIGHT * WIDTH - 5
 DIM = 3
 
 
-def test_2d():
+class ProgressStopper:
+    def __init__(self, p):
+        self.p = p
+
+    def __call__(self, p: float):
+        return p >= self.p
+
+
+def create_progress():
     rng = np.random.default_rng(42)
-    all_features = rng.random((N_ALL_FEATURES, DIM)).astype(np.float32)
-    query_labels = rng.choice(a=N_ALL_FEATURES, size=QUERY_SIZE, replace=False, shuffle=False)
+    features = rng.random((HEIGHT, WIDTH, DIM)).astype(np.float32)
 
-    query_features = all_features[query_labels]
-    query_features[0] = np.array([1, 1, 1])
+    n_steps = 100
+    for i in range(n_steps):
+        arrangement = flas(features, radius_decay=0.93, callback=ProgressStopper((i + 1) / n_steps), seed=42)
+        sorted_features = arrangement.get_sorted_features()
 
-    grid_builder = GridBuilder(aspect_ratio=1.0)
-    grid_builder.put(
-        query_features[0],
-        (32, 32),
-        query_labels[0],
-    )
-    grid_builder.add(
-        features=query_features[1:],
-        labels=query_labels[1:]
-    )
+        image = Image.fromarray((sorted_features * 255).astype(np.uint8))
+        image.save(f'images/gif/image{i:03}.png', 'PNG')
+        print(f'saved image {i+1:02}')
 
-    arrangement = flas(grid_builder.build(freeze_holes=False), wrap=False, radius_decay=0.93)
 
-    # sorted_features = arrangement.sort_by_labels(all_features, np.zeros(3, dtype=np.float32))
-    # sorted_features = np.array(sorted_features)
+def try_narrow():
+    h, w, d = 100, 8, 3
+    features = np.random.random((h, w, d))
+    grid = Grid.from_grid_features(features)
+
+    arrangement = flas(grid, radius_decay=0.93)
 
     sorted_features = arrangement.get_sorted_features()
+    height, width, dim = sorted_features.shape
 
     image = Image.fromarray((sorted_features[:, :, :3] * 255).astype(np.uint8))
     image.save('images/image1.png', 'PNG')
@@ -93,6 +99,7 @@ def reproduce_bug():
 
 if __name__ == '__main__':
     # test_1d()
-    test_2d()
+    # create_progress()
+    try_narrow()
     # example_2d()
     # reproduce_bug()

@@ -28,7 +28,8 @@ inline int max(const int a, const int b) {
 class FlasSettings {
 public:
   FlasSettings(bool do_wrap, float initial_radius_factor, float radius_decay, int num_filters, float radius_end,
-    float weight_swappable, float weight_non_swappable, float weight_hole, float sample_factor, int max_swap_positions)
+    float weight_swappable, float weight_non_swappable, float weight_hole, float sample_factor, int max_swap_positions,
+    int optimize_narrow_grids)
     : do_wrap(do_wrap),
       initial_radius_factor(initial_radius_factor),
       radius_decay(radius_decay),
@@ -38,8 +39,9 @@ public:
       weight_non_swappable(weight_non_swappable),
       weight_hole(weight_hole),
       sample_factor(sample_factor),
-      max_swap_positions(max_swap_positions) {
-  }
+      max_swap_positions(max_swap_positions),
+      optimize_narrow_grids(optimize_narrow_grids)
+  { }
 
   bool do_wrap;
   float initial_radius_factor;
@@ -51,10 +53,11 @@ public:
   float weight_hole;
   float sample_factor;
   int max_swap_positions;
+  int optimize_narrow_grids;
 };
 
 inline FlasSettings default_settings() {
-  return {false, 0.5f, 0.93f, 1, 1.0f, 1.0f, 100.f, 0.01f, 1.f, 9};
+  return {false, 0.5f, 0.93f, 1, 1.0f, 1.0f, 100.f, 0.01f, 1.f, 9, 1};
 }
 
 // ------------------- INTERNAL DATA -------------------
@@ -879,14 +882,34 @@ inline void check_random_swaps(const InternalData *data, int radius, float sampl
  * @param rows Number of rows in the grid to sort
  * @param settings The settings of the sorting algorithm
  * @param rng The RandomEngine to use for pseudo number generation
+ * @param callback A callback function that is called every iteration. The argument is the progress between 0 and 1. If
+ *                 true is returned, the algorithm will stop.
  */
 inline void do_sorting_full(
-  MapField *map_fields, int dim, int columns, int rows, const FlasSettings *settings, RandomEngine* rng
+  MapField *map_fields, int dim, int columns, int rows, const FlasSettings *settings, RandomEngine* rng,
+  const std::function<bool(float)>& callback
 ) {
-  const InternalData data = create_internal_data(map_fields, columns, rows, dim, settings->max_swap_positions, rng);
-
   // set up the initial radius
   float rad = static_cast<float>(max(columns, rows)) * settings->initial_radius_factor;
+
+  // setup progress callback
+  int num_iterations = static_cast<int>(ceil(-log(rad) / log(settings->radius_decay)));
+  int iteration_counter = 0;
+  if (callback(0.f))
+    return;
+
+  // optimize narrow grids?
+  int optimize_narrow = settings->optimize_narrow_grids;
+  if (optimize_narrow == 1) {
+    float aspect_ratio = (float)columns / (float)rows;
+    if (aspect_ratio > 0.1f) {
+      optimize_narrow = 0;
+    }
+  }
+
+  printf("optimize narrow: %d\n", optimize_narrow);
+
+  const InternalData data = create_internal_data(map_fields, columns, rows, dim, settings->max_swap_positions, rng);
 
   // try to improve the map
   do {
@@ -895,12 +918,29 @@ inline void do_sorting_full(
     int radius = max(1, static_cast<int>(std::round(rad))); // set the radius
     int radius_x = max(1, min(columns / 2, radius));
     int radius_y = max(1, min(rows / 2, radius));
+    if (optimize_narrow) {
+      // SSM6 variant
+      radius_x = max((int)(columns * 0.8f), columns-2); // MIN(nX-1, p->radius);
+      /* TODO: take this?
+      if (rad < 1.5f)
+        radius_x = 1;
+      */
+      radius_y = min(rows-1, radius);
+    } else {
+      radius_x = max(1, min(columns / 2, radius));
+      radius_y = max(1, min(rows / 2, radius));
+    }
     rad *= settings->radius_decay;
 
     for (int i = 0; i < settings->num_filters; i++)
       filter_weighted_som(radius_x, radius_y, &data, settings->do_wrap);
 
     check_random_swaps(&data, radius, settings->sample_factor, settings->do_wrap);
+
+    iteration_counter++;
+    float progress = static_cast<float>(iteration_counter) / static_cast<float>(num_iterations);
+    if (callback(progress))
+      break;
   } while (rad > settings->radius_end);
 
   free_internal_data(&data);
