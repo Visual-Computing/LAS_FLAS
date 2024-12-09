@@ -26,6 +26,8 @@ def mean_neighbor_distance(
     if reduce not in ('mean', 'sum'):
         raise ValueError("reduce must be either 'mean' or 'sum', got: {}".format(reduce))
 
+    sorted_features = sorted_features.astype(np.float64)
+
     if wrap:
         x_orig = sorted_features
         x_moved = np.roll(sorted_features, 1, axis=1)
@@ -68,25 +70,26 @@ def mean_neighbor_distance(
     if num_present_y:
         sum_y = np.sum(dists_y)
 
-    dist_sum = sum_x + sum_y
-    num_dists = num_present_x + num_present_y
+    # multiply with 2, as every distance is computed once for each neighbor
+    # makes a difference, if substitute_missing_neighbors is True
+    dist_sum = (sum_x + sum_y) * 2
+    num_dists = (num_present_x + num_present_y) * 2
 
     # substitutes
     if substitute_missing_neighbors:
         if valid is not None:
             error_code, sub_num_dists, sub_dist_sum = flas_cpp.calc_hole_substitution_distance(
-                np.ascontiguousarray(sorted_features.astype(np.float32)),
+                np.ascontiguousarray(sorted_features),
                 np.ascontiguousarray(valid.astype(bool)),
                 wrap
             )
         else:
             error_code, sub_num_dists, sub_dist_sum = flas_cpp.calc_hole_substitution_distance_all_valid(
-                np.ascontiguousarray(sorted_features.astype(np.float32)),
+                np.ascontiguousarray(sorted_features),
                 wrap
             )
         if error_code != 0:
             raise RuntimeError('Substitution of missing neighbors failed with error code: {}'.format(error_code))
-        # print('sub_dist_sum:', sub_dist_sum, 'sub_num_dists:', sub_num_dists)
         dist_sum += sub_dist_sum
         num_dists += sub_num_dists
 
@@ -111,6 +114,8 @@ def distance_ratio_to_optimum(features: np.ndarray, valid: np.ndarray | None = N
     if features.ndim != 3:
         raise ValueError("features must have shape (h, w, d), got: ".format(features.shape))
 
+    features = features.astype(np.float64)
+
     features_flat = features.reshape(-1, features.shape[-1])
     if valid is not None:
         if valid.shape != features.shape[:-1]:
@@ -124,8 +129,6 @@ def distance_ratio_to_optimum(features: np.ndarray, valid: np.ndarray | None = N
         features, valid=valid, wrap=wrap, reduce='mean', substitute_missing_neighbors=True
     )
 
-    # print('real_distance:', mean_real_distance, ' optimal_distance:', mean_optimal_distance)
-
     return mean_optimal_distance / mean_real_distance
 
 
@@ -137,6 +140,7 @@ def _get_impossible_optimal_distance(features: np.ndarray):
     :param features: Numpy array with shape (n, d) where features[i] is a feature vector.
     """
     # distances contains (n, n) distances. distances[i, j] contains the distance between feature[i] and feature[j]
+    features = features.astype(np.float64)
     distances = _l2_distance(features, features)
     distances = _remove_diag(distances)  # remove distances[i, i] == 0
     closest_dists = np.partition(distances, 4, axis=1)[:, :4]

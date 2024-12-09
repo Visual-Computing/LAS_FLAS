@@ -7,6 +7,8 @@
 
 #include <tuple>
 
+#include "fast_linear_assignment_sorter.hpp"
+
 inline bool get_valid(const bool* const valid, size_t y, size_t x, size_t height, size_t width, bool wrap) {
   if (wrap) {
     // wrap around the plane
@@ -28,8 +30,8 @@ inline bool get_valid(const bool* const valid, size_t y, size_t x, size_t height
   return valid[x + y * width];
 }
 
-inline const float* get_feature(
-  const float* const features, size_t y, size_t x, size_t height, size_t width, size_t dim, bool wrap
+inline const double* get_feature(
+  const double* const features, size_t y, size_t x, size_t height, size_t width, size_t dim, bool wrap
 ) {
   if (wrap) {
     // wrap around the plane
@@ -127,19 +129,19 @@ inline unsigned int num_substitutions_needed(
 }
 
 inline double get_best_substitution_partner_distances_sum(
-  size_t center_y, size_t center_x, size_t height, size_t width, size_t dim, bool wrap, const float* const features,
+  size_t center_y, size_t center_x, size_t height, size_t width, size_t dim, bool wrap, const double* const features,
   const bool* const valid, unsigned int num_subs
 ) {
-  const float* center_feature = get_feature(features, center_y, center_x, height, width, dim, wrap);
+  const double* center_feature = get_feature(features, center_y, center_x, height, width, dim, wrap);
   int distance = 2; // distance-1 partners are already used, so we start at 2.
   unsigned int num_found = 0;
-  std::array<float, 4> best_distances{};
+  std::array<double, 4> best_distances{};
   while (num_found != num_subs) {
     for (const auto& [y, x] : L1DistanceRange(static_cast<int>(center_y), static_cast<int>(center_x), distance)) {
       if (get_valid(valid, y, x, height, width, wrap)) {
-        const float* const feature = get_feature(features, y, x, height, width, dim, wrap);
+        const double* const feature = get_feature(features, y, x, height, width, dim, wrap);
         if (feature != nullptr) {
-          float feat_distance = get_l2_distance(center_feature, feature, static_cast<int>(dim));
+          double feat_distance = get_l2_distance<double>(center_feature, feature, static_cast<int>(dim));
           if (num_found < num_subs) {
             best_distances[num_found] = feat_distance;
             num_found++;
@@ -169,7 +171,7 @@ inline double get_best_substitution_partner_distances_sum(
 }
 
 inline std::tuple<unsigned int, double> calc_substitution_distance(
-  size_t height, size_t width, size_t dim, bool wrap, const float* const features, const bool* const valid
+  size_t height, size_t width, size_t dim, bool wrap, const double* const features, const bool* const valid
   ) {
   unsigned int num_dists = 0;
   double sum_dists = 0;

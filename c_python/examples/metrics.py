@@ -53,7 +53,7 @@ def calc_ratio_to_opt():
 
 def create_feature_plane(size):
     indices = np.indices(size).astype(np.float32)
-    z_axis = np.sum(indices, axis=0)
+    z_axis = np.zeros_like(indices[0])
     result = np.stack([indices[0], indices[1], z_axis])
     result = np.moveaxis(result, 0, 2)
     return result / np.max(result)
@@ -61,13 +61,13 @@ def create_feature_plane(size):
 
 def ratio_to_opt_best_case():
     wrap = False
-    features = create_feature_plane((20, 20))
-    dist1 = np.linalg.norm(features[2, 2] - features[2, 3])
-    dist2 = np.linalg.norm(features[2, 2] - features[3, 2])
-    print('dists:', dist1, dist2)
-    # grid = Grid.from_grid_features(features)
-    # arrangement = flas(grid, wrap=wrap, radius_decay=0.93)
-    # arrangement.get_sorted_features()
+    features = create_feature_plane((10, 10))
+    dist1 = np.linalg.norm(features[0, 9] - features[0, 8])
+    dist2 = np.linalg.norm(features[0, 9] - features[1, 8])
+    dist3 = np.linalg.norm(features[0, 0] - features[1, 1])
+    print('dist [0,9] - [0,8]:', dist1)
+    print('dist [0,9] - [1,8]:', dist2)
+    print('dist [0,0] - [1,1]:', dist3)
     rat_to_opt = metrics.distance_ratio_to_optimum(features, wrap=wrap)
     print(rat_to_opt)
 
@@ -77,5 +77,5 @@ def ratio_to_opt_best_case():
 
 if __name__ == '__main__':
     # calc_ratio_to_opt()
-    ratio_to_opt_best_case()
-    # calc_metrics()
+    # ratio_to_opt_best_case()
+    calc_metrics()

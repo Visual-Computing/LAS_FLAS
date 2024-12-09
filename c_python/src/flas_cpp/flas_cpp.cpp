@@ -164,7 +164,7 @@ std::tuple<uint32_t, uint32_t> get_optimal_grid_size(
  *         - sum_distance, is the sum of all distances that where calculated to substitute holes
  */
 std::tuple<unsigned int, unsigned int, double> calc_hole_substitution_distance(
-  const py::array_t<float, py::array::c_style> &features,
+  const py::array_t<double, py::array::c_style> &features,
   const py::array_t<bool, py::array::c_style> &valid,
   const bool wrap
 ) {
@@ -176,7 +176,7 @@ std::tuple<unsigned int, unsigned int, double> calc_hole_substitution_distance(
   const size_t height = features_info.shape[0];
   const size_t width = features_info.shape[1];
   const size_t dim = features_info.shape[2];
-  const float* features_ptr = static_cast<const float *>(features_info.ptr);
+  const double* features_ptr = static_cast<const double *>(features_info.ptr);
 
   // valid
   const py::buffer_info valid_info = valid.request();
@@ -202,7 +202,7 @@ std::tuple<unsigned int, unsigned int, double> calc_hole_substitution_distance(
  *         - sum_distance, is the sum of all distances that where calculated to substitute holes
  */
 std::tuple<unsigned int, unsigned int, double> calc_hole_substitution_distance_all_valid(
-  const py::array_t<float, py::array::c_style> &features,
+  const py::array_t<double, py::array::c_style> &features,
   const bool wrap
 ) {
   // features
@@ -213,7 +213,7 @@ std::tuple<unsigned int, unsigned int, double> calc_hole_substitution_distance_a
   const size_t height = features_info.shape[0];
   const size_t width = features_info.shape[1];
   const size_t dim = features_info.shape[2];
-  const float* features_ptr = static_cast<const float *>(features_info.ptr);
+  const double* features_ptr = static_cast<const double *>(features_info.ptr);
 
   // calculation
   auto [num_dists, sum_dists] = calc_substitution_distance(height, width, dim, wrap, features_ptr, nullptr);

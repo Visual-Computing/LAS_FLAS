@@ -744,17 +744,19 @@ inline int find_swap_positions_wrap(const InternalData *data, const int *swap_in
   return swap_pos;
 }
 
-inline float get_squared_l2_distance(const float *fv1, const float *fv2, int dim) {
-  float dist = 0;
+template<class T>
+T get_squared_l2_distance(const T *fv1, const T *fv2, int dim) {
+  T dist = 0;
   for (int i = 0; i < dim; i++) {
-    float d = fv1[i] - fv2[i];
+    T d = fv1[i] - fv2[i];
     dist += d * d;
   }
   return dist;
 }
 
-inline float get_l2_distance(const float *fv1, const float *fv2, int dim) {
-  return sqrt(get_squared_l2_distance(fv1, fv2, dim));
+template<class T>
+T get_l2_distance(const T *fv1, const T *fv2, int dim) {
+  return sqrt(get_squared_l2_distance<T>(fv1, fv2, dim));
 }
 
 inline void calc_dist_lut_l2_int(const InternalData *data, int num_swaps) {
