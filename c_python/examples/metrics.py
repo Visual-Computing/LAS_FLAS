@@ -105,8 +105,23 @@ def ratio_to_opt_best_case():
     image.save('images/image2.png', 'PNG')
 
 
+def try_different_qualities():
+    wrap = False
+    height, width, dim = 60, 60, 3
+    features = np.random.random((height, width, dim)).astype(np.float32)
+    grid = Grid.from_grid_features(features)
+
+    for radius_decay in [0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 0.93, 0.97, 0.99]:
+        arrangement = flas(grid, wrap=wrap, radius_decay=radius_decay)
+        dpq = arrangement.get_distance_preservation_quality()
+        mnd = arrangement.get_mean_neighbor_distance()
+        rto = arrangement.get_distance_ratio_to_optimum()
+        print(f'radius_decay={radius_decay:.2f}: dpq={dpq:.4f}   mnd={mnd:.4f}   rto={rto:.4f}')
+
+
 if __name__ == '__main__':
     # calc_ratio_to_opt()
     # ratio_to_opt_best_case()
     # try_metrics()
-    calc_image_metrics()
+    # calc_image_metrics()
+    try_different_qualities()

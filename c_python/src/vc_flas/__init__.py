@@ -604,6 +604,9 @@ def flas(
     if size[0] < 2 or size[1] < 2:
         raise ValueError('Grid must have at least size (2, 2), but got: {}'.format(size))
 
+    if radius_decay >= 1.0:
+        raise ValueError('radius_decay must be smaller than 1.0 but got: {}'.format(radius_decay))
+
     # TODO: return identity sorting
     if np.all(grid.frozen):
         raise ValueError('All features are frozen. Cannot sort features.')
