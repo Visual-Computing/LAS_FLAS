@@ -24,32 +24,50 @@ def create_features_grid_arrangement2(n: int, dim: int, wrap: bool):
     return features, grid, arrangement
 
 
-def calc_metrics():
+def try_metrics():
     wrap = True
     # features, grid, arrangement = create_feature_grid_arrangement(60, 60, 3, wrap)
     features, grid, arrangement = create_features_grid_arrangement2(60 * 60, 3, wrap)
 
-    arrangement.get_sorted_features()
+    print('grid size:', grid.get_size())
 
+    print('\nrandom features')
+    calc_metrics(features, wrap)
+    print('\nsorted features')
+    calc_metrics(arrangement.get_sorted_features(), wrap)
+
+
+def calc_metrics(features, wrap):
     start_time_dpq = time.perf_counter()
-    sorted_dpq = arrangement.get_distance_preservation_quality()
     random_dpq = metrics.distance_preservation_quality(features, wrap=wrap)
     end_time_dpq = time.perf_counter()
 
     start_time_mnd = time.perf_counter()
-    sorted_mnd = arrangement.get_mean_neighbor_distance()
     random_mnd = metrics.mean_neighbor_distance(features, wrap=wrap)
     end_time_mnd = time.perf_counter()
 
     start_time_rto = time.perf_counter()
-    sorted_rto = arrangement.get_distance_ratio_to_optimum()
     random_rto = metrics.distance_ratio_to_optimum(features, wrap=wrap)
     end_time_rto = time.perf_counter()
 
-    print('METRIC  Random  Sorted  Runtime')
-    print('DPQ     {:<7.3f} {:<7.3f} {:<8.4f}'.format(random_dpq, sorted_dpq, end_time_dpq - start_time_dpq))
-    print('MND     {:<7.3f} {:<7.3f} {:<8.4f}'.format(random_mnd, sorted_mnd, end_time_mnd - start_time_mnd))
-    print('RTO     {:<7.3f} {:<7.3f} {:<8.4f}'.format(random_rto, sorted_rto, end_time_rto - start_time_rto))
+    print('METRIC  Random  Runtime')
+    print('DPQ     {:<7.3f} {:<8.4f}'.format(random_dpq, end_time_dpq - start_time_dpq))
+    print('MND     {:<7.3f} {:<8.4f}'.format(random_mnd, end_time_mnd - start_time_mnd))
+    print('RTO     {:<7.3f} {:<8.4f}'.format(random_rto, end_time_rto - start_time_rto))
+
+
+def calc_image_metrics():
+    path = 'images/rgb_4x4_2.png'
+    image = Image.open(path)
+    image = np.array(image) / 255.0
+    height, width = image.shape[:2]
+    print('image shape:', image.shape)
+
+    print('\noriginal image')
+    calc_metrics(image, wrap=False)
+    print('\nshuffled image')
+    dim = image.shape[-1]
+    calc_metrics(np.random.permutation(image.reshape(-1, dim)).reshape(height, width, dim), wrap=False)
 
 
 def calc_ratio_to_opt():
@@ -90,4 +108,5 @@ def ratio_to_opt_best_case():
 if __name__ == '__main__':
     # calc_ratio_to_opt()
     # ratio_to_opt_best_case()
-    calc_metrics()
+    # try_metrics()
+    calc_image_metrics()
