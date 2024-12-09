@@ -6,6 +6,11 @@ cmake_policy(SET CMP0148 NEW)
 # Project name and language
 project(flas_cpp LANGUAGES CXX)
 
+# Use C++17
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 if(DEFINED PYTHON_EXECUTABLE)
 	set(Python_EXECUTABLE ${PYTHON_EXECUTABLE})
 endif()
