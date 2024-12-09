@@ -37,7 +37,7 @@ def calc_metrics():
     print('METRIC  Random  Sorted  Runtime')
     print('DPQ     {:<7.3f} {:<7.3f} {:<8.4f}'.format(random_dpq, sorted_dpq, end_time_dpq - start_time_dpq))
     print('MND     {:<7.3f} {:<7.3f} {:<8.4f}'.format(random_mnd, sorted_mnd, end_time_mnd - start_time_mnd))
-    print('DTO     {:<7.3f} {:<7.3f} {:<8.4f}'.format(random_rto, sorted_rto, end_time_rto - start_time_rto))
+    print('RTO     {:<7.3f} {:<7.3f} {:<8.4f}'.format(random_rto, sorted_rto, end_time_rto - start_time_rto))
 
 
 def calc_ratio_to_opt():
