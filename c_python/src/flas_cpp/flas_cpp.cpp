@@ -5,6 +5,7 @@
 #include <pybind11/functional.h>
 
 #include "fast_linear_assignment_sorter.hpp"
+#include "metrics.hpp"
 
 namespace py = pybind11;
 
@@ -118,7 +119,6 @@ std::tuple<int, py::array_t<int32_t> > flas_no_callback(
   );
 }
 
-
 std::tuple<uint32_t, uint32_t> get_size(const size_t n_features, const float aspect_ratio) {
 	uint32_t height = static_cast<uint32_t>(std::sqrt(static_cast<float>(n_features) / aspect_ratio));
 	uint32_t width = static_cast<uint32_t>(static_cast<float>(height) * aspect_ratio);
@@ -154,8 +154,76 @@ std::tuple<uint32_t, uint32_t> get_optimal_grid_size(
     return std::make_tuple(min_height, min_width);
 }
 
+/**
+ * @param features The features array with shape [h, w, d].
+ * @param valid Boolean array defining valid (not holes) fields with shape [h, w]
+ * @param wrap Whether features can be wrapped around the plane.
+ * @return A tuple [error_code, num_distances, sum_distance], where
+ *         - error_code indices an error, if != 0
+ *         - num_distances, is the number of distances that where calculated to substitute holes
+ *         - sum_distance, is the sum of all distances that where calculated to substitute holes
+ */
+std::tuple<unsigned int, unsigned int, double> calc_hole_substitution_distance(
+  const py::array_t<float, py::array::c_style> &features,
+  const py::array_t<bool, py::array::c_style> &valid,
+  const bool wrap
+) {
+  // features
+  const py::buffer_info features_info = features.request();
+  if (features_info.ndim != 3) {
+    return std::make_tuple(1, 0, 0.0);
+  }
+  const size_t height = features_info.shape[0];
+  const size_t width = features_info.shape[1];
+  const size_t dim = features_info.shape[2];
+  const float* features_ptr = static_cast<const float *>(features_info.ptr);
+
+  // valid
+  const py::buffer_info valid_info = valid.request();
+  if (valid_info.ndim != 2) {
+    return std::make_tuple(2, 0, 0.0);
+  }
+  if (valid_info.shape[0] != height || valid_info.shape[1] != width) {
+    return std::make_tuple(3, 0, 0.0); // wrong shape
+  }
+  const bool* valid_ptr = static_cast<const bool *>(valid_info.ptr);
+
+  // calculation
+  auto [num_dists, sum_dists] = calc_substitution_distance(height, width, dim, wrap, features_ptr, valid_ptr);
+  return std::make_tuple(0, num_dists, sum_dists);
+}
+
+/**
+ * @param features The features array with shape [h, w, d].
+ * @param wrap Whether features can be wrapped around the plane.
+ * @return A tuple [error_code, num_distances, sum_distance], where
+ *         - error_code indices an error, if != 0
+ *         - num_distances, is the number of distances that where calculated to substitute holes
+ *         - sum_distance, is the sum of all distances that where calculated to substitute holes
+ */
+std::tuple<unsigned int, unsigned int, double> calc_hole_substitution_distance_all_valid(
+  const py::array_t<float, py::array::c_style> &features,
+  const bool wrap
+) {
+  // features
+  const py::buffer_info features_info = features.request();
+  if (features_info.ndim != 3) {
+    return std::make_tuple(1, 0, 0.0);
+  }
+  const size_t height = features_info.shape[0];
+  const size_t width = features_info.shape[1];
+  const size_t dim = features_info.shape[2];
+  const float* features_ptr = static_cast<const float *>(features_info.ptr);
+
+  // calculation
+  auto [num_dists, sum_dists] = calc_substitution_distance(height, width, dim, wrap, features_ptr, nullptr);
+  return std::make_tuple(0, num_dists, sum_dists);
+}
+
 PYBIND11_MODULE(flas_cpp, m) {
   m.def("flas", &flas);
   m.def("flas_no_callback", &flas_no_callback);
   m.def("get_optimal_grid_size", &get_optimal_grid_size);
+  m.def("calc_hole_substitution_distance", &calc_hole_substitution_distance);
+  m.def("calc_hole_substitution_distance_all_valid", &calc_hole_substitution_distance_all_valid);
 }

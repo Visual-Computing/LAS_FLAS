@@ -18,6 +18,7 @@ set(LIBRARY_SOURCES
 	ext/fast_linear_assignment_sorter.hpp
 	ext/junker_volgenant_solver.hpp
 	ext/map_field.hpp
+	ext/metrics.hpp
 )
 
 # Create the library

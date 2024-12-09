@@ -1,6 +1,7 @@
 import time
 
 import numpy as np
+from PIL import Image
 
 from vc_flas import Grid, flas, metrics
 
@@ -59,19 +60,22 @@ def create_feature_plane(size):
 
 
 def ratio_to_opt_best_case():
-    wrap = True
+    wrap = False
     features = create_feature_plane((20, 20))
     dist1 = np.linalg.norm(features[2, 2] - features[2, 3])
     dist2 = np.linalg.norm(features[2, 2] - features[3, 2])
     print('dists:', dist1, dist2)
-    grid = Grid.from_grid_features(features)
-    arrangement = flas(grid, wrap=wrap, radius_decay=0.93)
-    arrangement.get_sorted_features()
-    rat_to_opt = metrics.distance_ratio_to_optimum(arrangement.get_sorted_features(), wrap=wrap)
+    # grid = Grid.from_grid_features(features)
+    # arrangement = flas(grid, wrap=wrap, radius_decay=0.93)
+    # arrangement.get_sorted_features()
+    rat_to_opt = metrics.distance_ratio_to_optimum(features, wrap=wrap)
     print(rat_to_opt)
+
+    image = Image.fromarray((features * 255).astype(np.uint8))
+    image.save('images/image2.png', 'PNG')
 
 
 if __name__ == '__main__':
     # calc_ratio_to_opt()
-    # ratio_to_opt_best_case()
-    calc_metrics()
+    ratio_to_opt_best_case()
+    # calc_metrics()

@@ -1,9 +1,10 @@
 import numpy as np
+import flas_cpp
 
 
 def mean_neighbor_distance(
         sorted_features: np.ndarray, valid: np.ndarray | None = None, wrap: bool = False, ord: int = 2,
-        reduce: str = 'mean'
+        reduce: str = 'mean', substitute_missing_neighbors: bool = False
 ) -> float:
     """
     Calculate the mean squared distances between neighbors of sorted features.
@@ -14,6 +15,9 @@ def mean_neighbor_distance(
     :param wrap: If True, distances are calculated for opposite edges of the grid as well.
     :param ord: The p-norm to use. Defaults to L2-norm.
     :param reduce: The operation to use for reduction. Either "sum" or "mean".
+    :param substitute_missing_neighbors: If True, missing neighbors (like on edges or holes) are replaced by the nearest
+                                         l1 neighbor on the 2D-grid. If multiple neighbors are present, those neighbors
+                                         with the lowest feature-distance are chosen.
     :return:
     """
     if sorted_features.ndim != 3:
@@ -33,11 +37,11 @@ def mean_neighbor_distance(
         y_orig = sorted_features[:-1]
         y_moved = sorted_features[1:]
 
-    diffs_x = np.linalg.norm(x_orig - x_moved, axis=-1, ord=ord)
-    diffs_y = np.linalg.norm(y_orig - y_moved, axis=-1, ord=ord)
+    dists_x = np.linalg.norm(x_orig - x_moved, axis=-1, ord=ord)
+    dists_y = np.linalg.norm(y_orig - y_moved, axis=-1, ord=ord)
 
-    num_present_x = np.prod(diffs_x.shape)
-    num_present_y = np.prod(diffs_y.shape)
+    num_present_x = np.prod(dists_x.shape)
+    num_present_y = np.prod(dists_y.shape)
 
     if valid is not None:
         if valid.shape != sorted_features.shape[:-1]:
@@ -53,23 +57,45 @@ def mean_neighbor_distance(
         num_present_x = np.sum(present_x)
         num_present_y = np.sum(present_y)
 
-        diffs_x = diffs_x * present_x
-        diffs_y = diffs_y * present_y
+        dists_x = dists_x * present_x
+        dists_y = dists_y * present_y
 
     sum_x = 0
     if num_present_x:
-        sum_x = np.sum(diffs_x)
+        sum_x = np.sum(dists_x)
 
     sum_y = 0
     if num_present_y:
-        sum_y = np.sum(diffs_y)
+        sum_y = np.sum(dists_y)
 
-    diff_sum = sum_x + sum_y
+    dist_sum = sum_x + sum_y
+    num_dists = num_present_x + num_present_y
+
+    # substitutes
+    if substitute_missing_neighbors:
+        if valid is not None:
+            error_code, sub_num_dists, sub_dist_sum = flas_cpp.calc_hole_substitution_distance(
+                np.ascontiguousarray(sorted_features.astype(np.float32)),
+                np.ascontiguousarray(valid.astype(bool)),
+                wrap
+            )
+        else:
+            error_code, sub_num_dists, sub_dist_sum = flas_cpp.calc_hole_substitution_distance_all_valid(
+                np.ascontiguousarray(sorted_features.astype(np.float32)),
+                wrap
+            )
+        if error_code != 0:
+            raise RuntimeError('Substitution of missing neighbors failed with error code: {}'.format(error_code))
+        # print('sub_dist_sum:', sub_dist_sum, 'sub_num_dists:', sub_num_dists)
+        dist_sum += sub_dist_sum
+        num_dists += sub_num_dists
+
+    # reduce
     if reduce == 'mean':
-        if num_present_x + num_present_y > 1:
-            diff_sum /= num_present_x + num_present_y
+        if num_dists > 1:
+            dist_sum /= num_dists
 
-    return diff_sum
+    return dist_sum
 
 
 def distance_ratio_to_optimum(features: np.ndarray, valid: np.ndarray | None = None, wrap: bool = False) -> float:
@@ -94,7 +120,11 @@ def distance_ratio_to_optimum(features: np.ndarray, valid: np.ndarray | None = N
         features_flat = features_flat[valid_flat]
 
     mean_optimal_distance = _get_impossible_optimal_distance(features_flat)
-    mean_real_distance = mean_neighbor_distance(features, valid=valid, wrap=wrap, reduce='mean')
+    mean_real_distance = mean_neighbor_distance(
+        features, valid=valid, wrap=wrap, reduce='mean', substitute_missing_neighbors=True
+    )
+
+    # print('real_distance:', mean_real_distance, ' optimal_distance:', mean_optimal_distance)
 
     return mean_optimal_distance / mean_real_distance
 

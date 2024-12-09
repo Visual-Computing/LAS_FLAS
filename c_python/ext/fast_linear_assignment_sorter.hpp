@@ -744,7 +744,7 @@ inline int find_swap_positions_wrap(const InternalData *data, const int *swap_in
   return swap_pos;
 }
 
-inline float get_l2_distance(const float *fv1, const float *fv2, int dim) {
+inline float get_squared_l2_distance(const float *fv1, const float *fv2, int dim) {
   float dist = 0;
   for (int i = 0; i < dim; i++) {
     float d = fv1[i] - fv2[i];
@@ -753,11 +753,15 @@ inline float get_l2_distance(const float *fv1, const float *fv2, int dim) {
   return dist;
 }
 
+inline float get_l2_distance(const float *fv1, const float *fv2, int dim) {
+  return sqrt(get_squared_l2_distance(fv1, fv2, dim));
+}
+
 inline void calc_dist_lut_l2_int(const InternalData *data, int num_swaps) {
   float max = 0;
   for (int i = 0; i < num_swaps; i++)
     for (int j = 0; j < num_swaps; j++) {
-      const float val = get_l2_distance(data->fvs[i], data->som_fvs[j], data->dim);
+      const float val = get_squared_l2_distance(data->fvs[i], data->som_fvs[j], data->dim);
       data->dist_lut_f[i * num_swaps + j] = val;
       if (val > max)
         max = val;
