@@ -894,7 +894,7 @@ inline void do_sorting_full(
   float rad = static_cast<float>(max(columns, rows)) * settings->initial_radius_factor;
 
   // setup progress callback
-  int num_iterations = static_cast<int>(ceil(-log(rad) / log(settings->radius_decay)));
+  const int num_iterations = static_cast<int>(ceil(-log(rad / settings->radius_end) / log(settings->radius_decay)));
   int iteration_counter = 0;
   if (callback(0.f))
     return;
