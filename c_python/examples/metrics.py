@@ -13,9 +13,21 @@ def create_feature_grid_arrangement(height: int, width: int, dim: int, wrap: boo
     return features, grid, arrangement
 
 
+def create_features_grid_arrangement2(n: int, dim: int, wrap: bool):
+    features = np.random.random((n, dim)).astype(np.float32)
+    grid = Grid.from_features(features, aspect_ratio=1.5)
+    n_padded = np.prod(grid.get_size())
+    pad = np.zeros((n_padded - n, dim), dtype=np.float32)
+    arrangement = flas(grid, wrap=wrap, radius_decay=0.93)
+    features = np.concatenate([features, pad])
+    features = features.reshape(*grid.get_size(), dim)
+    return features, grid, arrangement
+
+
 def calc_metrics():
-    wrap = False
-    features, grid, arrangement = create_feature_grid_arrangement(60, 60, 3, wrap)
+    wrap = True
+    # features, grid, arrangement = create_feature_grid_arrangement(60, 60, 3, wrap)
+    features, grid, arrangement = create_features_grid_arrangement2(60 * 60, 3, wrap)
 
     arrangement.get_sorted_features()
 

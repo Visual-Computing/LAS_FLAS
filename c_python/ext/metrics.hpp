@@ -9,7 +9,7 @@
 
 #include "fast_linear_assignment_sorter.hpp"
 
-inline bool get_valid(const bool* const valid, size_t y, size_t x, size_t height, size_t width, bool wrap) {
+inline bool get_valid(const bool* const valid, int y, int x, int height, int width, bool wrap) {
   if (wrap) {
     // wrap around the plane
     while (x < 0)
@@ -31,7 +31,7 @@ inline bool get_valid(const bool* const valid, size_t y, size_t x, size_t height
 }
 
 inline const double* get_feature(
-  const double* const features, size_t y, size_t x, size_t height, size_t width, size_t dim, bool wrap
+  const double* const features, int y, int x, int height, int width, int dim, bool wrap
 ) {
   if (wrap) {
     // wrap around the plane
@@ -112,7 +112,7 @@ private:
 };
 
 inline unsigned int num_substitutions_needed(
-  size_t y, size_t x, size_t height, size_t width, const bool* const valid, bool wrap
+  int y, int x, int height, int width, const bool* const valid, bool wrap
 ) {
   // if hole, dont substitute
   if (!get_valid(valid, y, x, height, width, false)) {
@@ -129,7 +129,7 @@ inline unsigned int num_substitutions_needed(
 }
 
 inline double get_best_substitution_partner_distances_sum(
-  size_t center_y, size_t center_x, size_t height, size_t width, size_t dim, bool wrap, const double* const features,
+  int center_y, int center_x, int height, int width, int dim, bool wrap, const double* const features,
   const bool* const valid, unsigned int num_subs
 ) {
   const double* center_feature = get_feature(features, center_y, center_x, height, width, dim, wrap);
@@ -137,7 +137,7 @@ inline double get_best_substitution_partner_distances_sum(
   unsigned int num_found = 0;
   std::array<double, 4> best_distances{};
   while (num_found != num_subs) {
-    for (const auto& [y, x] : L1DistanceRange(static_cast<int>(center_y), static_cast<int>(center_x), distance)) {
+    for (const auto& [y, x] : L1DistanceRange(center_y, center_x, distance)) {
       if (get_valid(valid, y, x, height, width, wrap)) {
         const double* const feature = get_feature(features, y, x, height, width, dim, wrap);
         if (feature != nullptr) {
@@ -171,12 +171,12 @@ inline double get_best_substitution_partner_distances_sum(
 }
 
 inline std::tuple<unsigned int, double> calc_substitution_distance(
-  size_t height, size_t width, size_t dim, bool wrap, const double* const features, const bool* const valid
+  int height, int width, int dim, bool wrap, const double* const features, const bool* const valid
   ) {
   unsigned int num_dists = 0;
   double sum_dists = 0;
-  for (size_t y = 0; y < height; y++) {
-    for (size_t x = 0; x < width; x++) {
+  for (int y = 0; y < height; y++) {
+    for (int x = 0; x < width; x++) {
       // needs substitution partners?
       unsigned int num_subs = num_substitutions_needed(y, x, height, width, valid, wrap);
       if (num_subs) {

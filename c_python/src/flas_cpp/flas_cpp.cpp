@@ -22,8 +22,8 @@ std::tuple<int, py::array_t<int32_t> > flas(
     const py::array_t<int32_t> tmp(0);
     return std::make_tuple(1, tmp);
   }
-  const size_t height = ids_info.shape[0];
-  const size_t width = ids_info.shape[1];
+  const int height = static_cast<int>(ids_info.shape[0]);
+  const int width = static_cast<int>(ids_info.shape[1]);
   const int32_t* ids_ptr = static_cast<const int32_t *>(ids_info.ptr);
 
   // features
@@ -32,7 +32,7 @@ std::tuple<int, py::array_t<int32_t> > flas(
     const py::array_t<int32_t> tmp(0);
     return std::make_tuple(2, tmp);
   }
-  const size_t dim = features_info.shape[1];
+  const int dim = static_cast<int>(features_info.shape[1]);
   const float* features_ptr = static_cast<const float *>(features_info.ptr);
 
   // frozen
@@ -173,9 +173,9 @@ std::tuple<unsigned int, unsigned int, double> calc_hole_substitution_distance(
   if (features_info.ndim != 3) {
     return std::make_tuple(1, 0, 0.0);
   }
-  const size_t height = features_info.shape[0];
-  const size_t width = features_info.shape[1];
-  const size_t dim = features_info.shape[2];
+  const int height = static_cast<int>(features_info.shape[0]);
+  const int width = static_cast<int>(features_info.shape[1]);
+  const int dim = static_cast<int>(features_info.shape[2]);
   const double* features_ptr = static_cast<const double *>(features_info.ptr);
 
   // valid
@@ -210,9 +210,9 @@ std::tuple<unsigned int, unsigned int, double> calc_hole_substitution_distance_a
   if (features_info.ndim != 3) {
     return std::make_tuple(1, 0, 0.0);
   }
-  const size_t height = features_info.shape[0];
-  const size_t width = features_info.shape[1];
-  const size_t dim = features_info.shape[2];
+  const int height = static_cast<int>(features_info.shape[0]);
+  const int width = static_cast<int>(features_info.shape[1]);
+  const int dim = static_cast<int>(features_info.shape[2]);
   const double* features_ptr = static_cast<const double *>(features_info.ptr);
 
   // calculation
