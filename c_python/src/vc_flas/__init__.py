@@ -85,7 +85,8 @@ class Grid:
         Creates a new grid from the given features.
 
         :param features: numpy array with shape (h, w, d).
-        :param labels: numpy integer array with shape (h, w), where h and w are the height and width of the grid.
+        :param labels: numpy integer array with shape (h, w) or (h*w,), where h and w are the height and width of the
+                       grid.
         :return: The new grid with the given features.
         """
         if features.dtype != np.float32:
@@ -99,12 +100,13 @@ class Grid:
         if labels is None:
             labels = np.arange(n, dtype=np.int32)
         else:
-            if labels.shape != (height, width):
-                raise ValueError('labels must have shape (h, w) but got: {}'.format(labels.shape))
+            if labels.shape != (height, width) and labels.shape != (n,):
+                raise ValueError('labels must have shape (h, w) or (h*w,) but got: {}'.format(labels.shape))
             if not np.issubdtype(labels.dtype, np.integer):
                 raise ValueError('ids must be an integer array but got: {}'.format(labels.dtype))
             if np.any(labels < 0):
                 raise ValueError('labels must be >= 0 but got label {}'.format(np.min(labels)))
+            labels = labels.reshape(n)
 
         return Grid(
             features=features.reshape(n, dim),
