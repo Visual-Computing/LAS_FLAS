@@ -80,11 +80,12 @@ class Grid:
         return np.not_equal(self.ids, -1)
 
     @classmethod
-    def from_grid_features(cls, features: np.ndarray):
+    def from_grid_features(cls, features: np.ndarray, labels: np.ndarray | None = None):
         """
         Creates a new grid from the given features.
 
         :param features: numpy array with shape (h, w, d).
+        :param labels: numpy integer array with shape (h, w), where h and w are the height and width of the grid.
         :return: The new grid with the given features.
         """
         if features.dtype != np.float32:
@@ -93,17 +94,29 @@ class Grid:
             raise ValueError('features must have shape (h, w, d) but got: {}'.format(features.shape))
         height, width, dim = features.shape
         n = height * width
+
+        # labels
+        if labels is None:
+            labels = np.arange(n, dtype=np.int32)
+        else:
+            if labels.shape != (height, width):
+                raise ValueError('labels must have shape (h, w) but got: {}'.format(labels.shape))
+            if not np.issubdtype(labels.dtype, np.integer):
+                raise ValueError('ids must be an integer array but got: {}'.format(labels.dtype))
+            if np.any(labels < 0):
+                raise ValueError('labels must be >= 0 but got label {}'.format(np.min(labels)))
+
         return Grid(
             features=features.reshape(n, dim),
             ids=np.arange(n, dtype=np.int32).reshape(height, width),
             frozen=np.zeros((height, width), dtype=bool),
-            labels=np.arange(n, dtype=np.uint32),
+            labels=labels,
         )
 
     @classmethod
     def from_features(
             cls, features: np.ndarray, size: Tuple[int, int] | None = None, aspect_ratio: float = 1.0,
-            freeze_holes: bool = True
+            freeze_holes: bool = True, labels: np.ndarray | None = None
     ):
         """
         Creates a new grid from the given features.
@@ -113,6 +126,8 @@ class Grid:
         :param aspect_ratio: The preferred aspect ratio of the grid. If size is given, this is ignored.
         :param freeze_holes: Sometimes holes are needed, to create a grid with the given aspect ratio. In this case this
                              parameter defines whether holes should be frozen.
+        :param labels: numpy array with shape (n,), where n is the number of features.
+                       Each label at labels[i] identifies one feature. If None labels are created automatically.
         :return:
         """
         if features.ndim != 2:
@@ -141,11 +156,22 @@ class Grid:
             frozen[n:] = True  # freeze holes
         frozen = frozen.reshape(height, width)
 
+        # labels
+        if labels is None:
+            labels = np.arange(n, dtype=np.int32)
+        else:
+            if labels.shape != (n,):
+                raise ValueError('labels must have shape (n,) but got: {}'.format(labels.shape))
+            if not np.issubdtype(labels.dtype, np.integer):
+                raise ValueError('ids must be an integer array but got: {}'.format(labels.dtype))
+            if np.any(labels < 0):
+                raise ValueError('labels must be >= 0 but got label {}'.format(np.min(labels)))
+
         return Grid(
             features=features,
             ids=ids.reshape(height, width),
             frozen=frozen,
-            labels=np.arange(n, dtype=np.uint32),
+            labels=labels,
         )
 
 
