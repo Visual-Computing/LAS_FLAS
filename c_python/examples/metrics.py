@@ -112,11 +112,25 @@ def try_different_qualities():
     grid = Grid.from_grid_features(features)
 
     for radius_decay in [0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 0.93, 0.97, 0.99]:
-        arrangement = flas(grid, wrap=wrap, radius_decay=radius_decay)
-        dpq = arrangement.get_distance_preservation_quality()
-        mnd = arrangement.get_mean_neighbor_distance()
-        rto = arrangement.get_distance_ratio_to_optimum()
-        print(f'radius_decay={radius_decay:.2f}: dpq={dpq:.4f}   mnd={mnd:.4f}   rto={rto:.4f}')
+        dpq_sum = 0
+        mnd_sum = 0
+        rto_sum = 0
+        runtime_sum = 0
+        n = 5
+        for i in range(n):
+            start_time = time.perf_counter()
+            arrangement = flas(grid, wrap=wrap, radius_decay=radius_decay)
+            end_time = time.perf_counter()
+            dpq = arrangement.get_distance_preservation_quality()
+            mnd = arrangement.get_mean_neighbor_distance()
+            rto = arrangement.get_distance_ratio_to_optimum()
+            print(f'radius_decay={radius_decay:.2f} ({i+1}):  dpq={dpq:.4f}   mnd={mnd:.4f}   rto={rto:.4f}   runtime={end_time - start_time:.4f}')
+            dpq_sum += dpq
+            mnd_sum += mnd
+            rto_sum += rto
+            runtime_sum += end_time - start_time
+        print(f'radius_decay={radius_decay:.2f} (mean):  dpq={dpq_sum / n:.4f}   mnd={mnd_sum / n:.4f}   rto={rto_sum / n:.4f}   runtime={runtime_sum / n:.4f}')
+        print()
 
 
 if __name__ == '__main__':
