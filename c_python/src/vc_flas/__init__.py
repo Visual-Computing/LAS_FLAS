@@ -34,7 +34,7 @@ class Grid:
             raise ValueError('features must have dtype float32 but got: {}'.format(features.dtype))
         if ids.dtype != np.int32:
             raise ValueError('ids must have dtype int32 but got: {}'.format(ids.dtype))
-        if frozen.dtype != np.bool:
+        if frozen.dtype != bool:
             raise ValueError('frozen must have dtype bool but got: {}'.format(frozen.dtype))
         if not np.isdtype(labels.dtype, 'integral'):
             raise ValueError('labels must have integer dtype but got: {}'.format(labels.dtype))
@@ -96,7 +96,7 @@ class Grid:
         return Grid(
             features=features.reshape(n, dim),
             ids=np.arange(n, dtype=np.int32).reshape(height, width),
-            frozen=np.zeros((height, width), dtype=np.bool),
+            frozen=np.zeros((height, width), dtype=bool),
             labels=np.arange(n, dtype=np.uint32),
         )
 
@@ -136,7 +136,7 @@ class Grid:
         ids[n:] = -1
 
         # frozen
-        frozen = np.zeros(height * width, dtype=np.bool)
+        frozen = np.zeros(height * width, dtype=bool)
         if freeze_holes:
             frozen[n:] = True  # freeze holes
         frozen = frozen.reshape(height, width)
@@ -361,7 +361,7 @@ class GridBuilder:
             ids = ids.reshape(height, width).astype(np.int32)
 
             # frozen
-            frozen = np.zeros((height * width), dtype=np.bool)
+            frozen = np.zeros((height * width), dtype=bool)
             if freeze_holes:
                 frozen[n_features:] = freeze_holes
             frozen = frozen.reshape(height, width)
@@ -438,7 +438,7 @@ class GridBuilder:
     def _init_grids(self):
         self.grid_features = np.zeros((*self.size, self.dim), dtype=np.float32)
         self.grid_labels = np.full(self.size, -1, dtype=np.int32)
-        self.frozen = np.zeros(self.size, dtype=np.bool)
+        self.frozen = np.zeros(self.size, dtype=bool)
 
     def _num_lazy_features(self) -> int:
         return sum(f.shape[0] for f, _ in self.lazy_features)
