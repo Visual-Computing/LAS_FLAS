@@ -36,7 +36,7 @@ class Grid:
             raise ValueError('ids must have dtype int32 but got: {}'.format(ids.dtype))
         if frozen.dtype != bool:
             raise ValueError('frozen must have dtype bool but got: {}'.format(frozen.dtype))
-        if not np.isdtype(labels.dtype, 'integral'):
+        if not np.issubdtype(labels.dtype, np.integer):
             raise ValueError('labels must have integer dtype but got: {}'.format(labels.dtype))
 
         self.features = features
@@ -304,7 +304,7 @@ class GridBuilder:
         if features.shape[:-1] != labels.shape:
             raise ValueError('features and labels must have same size. features.shape != labels.shape: {} != {}'.format(
                 features.shape, labels.shape))
-        if not np.isdtype(labels.dtype, 'integral'):
+        if not np.issubdtype(labels.dtype, np.integer):
             raise ValueError('ids must be an integer array but got: {}'.format(labels.dtype))
         if np.any(labels < 0):
             raise ValueError('labels must be >= 0 but got label {}'.format(np.min(labels)))
