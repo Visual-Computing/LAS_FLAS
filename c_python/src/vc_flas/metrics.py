@@ -147,19 +147,33 @@ def _get_impossible_optimal_distance(features: np.ndarray):
     return np.mean(closest_dists)
 
 
-def distance_preservation_quality(sorted_x: np.ndarray, wrap: bool = False, p: int = 2):
+def distance_preservation_quality(
+        sorted_x: np.ndarray, valid: np.ndarray | None = None, wrap: bool = False, p: int = 2
+):
     """
     Computes the Distance Preservation Quality DPQ_p(S)
 
     :param sorted_x: sorted features with shape (h, w, d).
+    :param valid: None or array with shape (h, w), where each valid field has a 1 except holes having a 0.
     :param wrap: Whether the grid should be wrapped around.
     :param p: The p-norm to use. Defaults to L2-norm.
     """
     # setup of required variables
+    if sorted_x.ndim != 3:
+        raise ValueError("sorted_x must have shape (h, w, d), got: ".format(sorted_x.shape))
+
     grid_shape = sorted_x.shape[:-1]
+    dim = sorted_x.shape[-1]
     n = np.prod(grid_shape)
-    _h, _w = grid_shape
-    flat_x = sorted_x.reshape((n, -1))
+    flat_x = sorted_x.reshape((n, dim))
+
+    valid_flat = None
+    if valid is not None:
+        if valid.shape != grid_shape:
+            raise ValueError("valid must have same size as features (h, w) = {}, got: {}".format(
+                    grid_shape, valid.shape))
+        valid_flat = valid.astype(bool).flatten()
+        flat_x = flat_x[valid_flat]
 
     # compute matrix of Euclidean distances in the high dimensional space
     dists_hd = _l2_distance(flat_x, flat_x)
@@ -172,6 +186,10 @@ def distance_preservation_quality(sorted_x: np.ndarray, wrap: bool = False, p: i
 
     # compute spatial distance matrix for each position on the 2D grid
     dists_spatial = _compute_spatial_distances_for_grid(grid_shape, wrap)
+
+    # remove spatial dists for holes
+    if valid_flat is not None:
+        dists_spatial = dists_spatial[:, valid_flat][valid_flat]
 
     # sort rows of HD distances by the values of spatial distances
     sorted_hd_by_2d = _sort_hd_dists_by_2d_dists(dists_hd, dists_spatial)

@@ -574,8 +574,7 @@ class Arrangement:
 
     def get_distance_preservation_quality(self) -> float:
         sorted_features = self.get_sorted_features()
-        # TODO: add holes
-        return metrics.distance_preservation_quality(sorted_features, self.wrap)
+        return metrics.distance_preservation_quality(sorted_features, self.get_valid(), self.wrap)
 
     def get_mean_neighbor_distance(self) -> float:
         sorted_features = self.get_sorted_features()

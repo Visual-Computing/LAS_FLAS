@@ -133,9 +133,25 @@ def try_different_qualities():
         print()
 
 
+def try_distance_preservation_quality():
+    wrap = False
+    n, dim = 3593, 3
+    features = np.random.random((n, dim)).astype(np.float32)
+    grid = Grid.from_features(features, freeze_holes=False)
+    print(f'grid_size={grid.get_size()} with {grid.get_num_holes()} holes')
+    arrangement = flas(grid, wrap=wrap)
+
+    dpq = arrangement.get_distance_preservation_quality()
+    print(f'dpq={dpq:.3f}')
+
+    image = Image.fromarray((arrangement.get_sorted_features() * 255).astype(np.uint8))
+    image.save('images/image3.png', 'PNG')
+
+
 if __name__ == '__main__':
     # calc_ratio_to_opt()
     # ratio_to_opt_best_case()
     # try_metrics()
     # calc_image_metrics()
-    try_different_qualities()
+    # try_different_qualities()
+    try_distance_preservation_quality()
