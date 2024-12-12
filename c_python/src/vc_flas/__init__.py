@@ -6,7 +6,7 @@ import numpy as np
 import flas_cpp
 
 
-__version__ = "0.1.4"
+__version__ = "0.1.5"
 
 
 class Grid:
