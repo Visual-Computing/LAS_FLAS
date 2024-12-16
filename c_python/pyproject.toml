@@ -12,7 +12,7 @@ build-backend = "setuptools.build_meta"
 name = "vc_flas"
 dynamic = ["version"]
 dependencies = [
-    "numpy>=2.1",
+    "numpy >=1.26,<3.0",
     "psutil",
 ]
 requires-python = ">= 3.11"
