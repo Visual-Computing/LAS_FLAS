@@ -21,7 +21,7 @@ authors = [
     {name = "Nico Hezel"},
     {name = "Konstantin Schall"},
     {name = "Prof. Kai Uwe Barthel"},
-    {name = "Klaus Jung"},
+    {name = "Prof. Klaus Jung"},
 ]
 description = "Python implementation of the Fast Linear Assigment Sorting Algorithm"
 readme = "README.md"
