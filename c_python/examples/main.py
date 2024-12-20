@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
+import json
+import os
 
 from PIL import Image
 import numpy as np
-from vc_flas import flas, Grid
+from vc_flas import flas, Grid, Arrangement
+from vc_flas.metrics import distance_preservation_quality, distance_ratio_to_optimum
+from simple_tables import Table
 
 N_ALL_FEATURES = 10000
 HEIGHT, WIDTH = 256, 256
@@ -94,9 +98,53 @@ def create_grid_by_feature_list(n: int, dim: int, aspect_ratio: float = 1.0, see
     return Grid.from_features(features, aspect_ratio=aspect_ratio)
 
 
+def import_and_try():
+    table = Table(('Method', 'Size', 'Sorted DPQ', 'Random DPQ', 'Sorted RTO', 'Random RTO'), float_precision=3)
+    files = [
+        'data/export/export_SSM6_5-cols.json',
+        'data/export/export_SSM6_8-cols.json',
+        'data/export/export_SSM6_10-cols.json',
+        'data/export/export_FLAS1_5-cols.json',
+        'data/export/export_FLAS1_8-cols.json',
+        'data/export/export_FLAS1_10-cols.json',
+    ]
+    for path in files:
+        import_grid_and_calc_metric(path, table)
+
+    print(table)
+
+
+def import_grid_and_calc_metric(path, table):
+    with open(path, 'r') as f:
+        data = json.load(f)
+
+    method_name = data['methodName']
+    feature_count = int(data['featureCount'])
+    size = data['rows'], data['columns']
+    features = np.array(data['features'], dtype=np.float32)
+    assert feature_count == features.shape[0], 'feature_count != np.prod(features.shape): {} != {}'.format(
+        feature_count, features.shape[0])
+
+    mapped_positions = np.array(data['mappedPositions'], dtype=np.int32)
+
+    sorted_features = features[mapped_positions].reshape(*size, -1)
+    features = features.reshape(*size, -1)
+
+    sorted_dpq = distance_preservation_quality(sorted_features)
+    random_dpq = distance_preservation_quality(features)
+    sorted_rto = distance_ratio_to_optimum(sorted_features)
+    random_rto = distance_ratio_to_optimum(features)
+
+    table.line(
+        method=method_name, size=str(size),
+        sorted_dpq=sorted_dpq, random_dpq=random_dpq, sorted_rto=sorted_rto, random_rto=random_rto
+    )
+
+
 if __name__ == '__main__':
     # test_1d()
     # create_progress()
     # try_narrow()
     # example_2d()
-    try_normal()
+    # try_normal()
+    import_and_try()
