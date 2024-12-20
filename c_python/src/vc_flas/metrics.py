@@ -160,7 +160,7 @@ def distance_preservation_quality(
     """
     # setup of required variables
     if sorted_x.ndim != 3:
-        raise ValueError("sorted_x must have shape (h, w, d), got: ".format(sorted_x.shape))
+        raise ValueError("sorted_x must have shape (h, w, d), got: {}".format(sorted_x.shape))
 
     grid_shape = sorted_x.shape[:-1]
     dim = sorted_x.shape[-1]

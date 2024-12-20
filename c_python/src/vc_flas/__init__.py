@@ -481,12 +481,18 @@ class Arrangement:
                         should be at position (y, x), while -1 indicates a hole.
         """
         if sorting.shape != grid.ids.shape[:2]:
-            raise ValueError('sorting must have shape {} but got: {}'.format(grid.ids, sorting.shape))
+            raise ValueError('sorting must have shape {} but got: {}'.format(grid.ids.shape, sorting.shape))
 
         self.grid = grid
         self.sorting = sorting
         self.wrap = wrap
         self.sorted_features: np.ndarray | None = None  # Use for caching
+
+    def __repr__(self):
+        """
+        :returns: a readable representation of the arrangement.
+        """
+        return 'Arrangement(size={}, wrap={})'.format(self.grid.get_size(), self.wrap)
 
     def get_size(self) -> Tuple[int, int]:
         """
