@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import numpy as np
 import flas_cpp
 
@@ -111,6 +113,8 @@ def distance_ratio_to_optimum(features: np.ndarray, valid: np.ndarray | None = N
     :param wrap: Whether distances between opposite edges of the grid should be considered.
     :return: Calculates the ratio between the given sorting and a theoretical optimal sorting
     """
+    if valid is None:
+        return distance_ratio_to_optimum_pyimpl(features, wrap)
     if features.ndim != 3:
         raise ValueError("features must have shape (h, w, d), got: ".format(features.shape))
 
@@ -130,6 +134,110 @@ def distance_ratio_to_optimum(features: np.ndarray, valid: np.ndarray | None = N
     )
 
     return mean_optimal_distance / mean_real_distance
+
+
+def distance_ratio_to_optimum_pyimpl(features: np.ndarray, wrap=False) -> float:
+    """
+    Calculates the ratio between the given sorting and a theoretical optimal sorting (that is, all 4 neighbors in the
+    sorting are the closest neighbors in the dataset).
+
+    :param features: Numpy array with shape (h, w, d) where features[y, x] is a feature vector at that position.
+    :param wrap: Whether distances between opposite edges of the grid should be considered.
+    :return: Calculates the ratio between the given sorting and a theoretical optimal sorting
+    """
+    # setup of required variables
+    grid_shape = features.shape[:-1]
+    n = np.prod(grid_shape)
+    flat_x = features.reshape((n, -1))
+
+    # compute matrix of Euclidean distances in the high dimensional space
+    dists_hd = np.sqrt(_single_squared_l2_distance(flat_x))
+
+    # dists_hd = distance.cdist(flat_x, flat_x, 'euclidean')
+    dists_hd = _remove_diag(dists_hd)
+    max_dist = np.max(dists_hd) * 1.0001
+    dists_hd = dists_hd / max_dist  # normalize the distance
+
+    sorted_hd4 = np.partition(dists_hd, 4, axis=1)[:, :4]   # the four closest neighbors
+    mean_opt = sorted_hd4.mean()
+
+    # compute spatial distance matrix for each position on the 2D grid
+    dists_2d = compute_spatial_distances_for_grid(grid_shape, wrap)
+    dists_2d = _remove_diag(dists_2d)
+
+    args_2d = np.argpartition(dists_2d, 5, axis=1)[:, :5]
+
+    dists_hd_5 = np.take_along_axis(dists_hd, args_2d, axis=1)
+    dists_2d_5 = np.take_along_axis(dists_2d, args_2d, axis=1)
+
+    # sort rows of HD distances by the values of spatial distances
+    sorted_hd_by_2d = sort_hddists_by_2d_dists(dists_hd_5, dists_2d_5)
+
+    dists_real = sorted_hd_by_2d[:, :4]
+    mean_real = dists_real.mean()
+
+    ratio_to_optimum = mean_opt / mean_real
+
+    return ratio_to_optimum
+
+
+def compute_spatial_distances_for_grid(grid_shape: Tuple[int, int], wrap: bool):
+    """
+    Converts a given gridshape to a grid index matrix and calculates the squared spatial distances
+    """
+    if wrap:
+        return compute_spatial_distances_for_grid_wrapped(grid_shape)
+    else:
+        return compute_spatial_distances_for_grid_non_wrapped(grid_shape)
+
+
+def compute_spatial_distances_for_grid_wrapped(grid_shape):
+    n_x = grid_shape[0]
+    n_y = grid_shape[1]
+
+    wrap1 = [[0, 0], [0, 0], [0, 0], [0, n_y], [0, n_y], [n_x, 0], [n_x, 0], [n_x, n_y]]
+    wrap2 = [[0, n_y], [n_x, 0], [n_x, n_y], [0, 0], [n_x, 0], [0, 0], [0, n_y], [0, 0]]
+
+    # create 2D position matrix with tuples, i.e. [(0,0), (0,1)...(H-1, W-1)]
+    a, b = np.indices(grid_shape)
+    mat = np.concatenate([np.expand_dims(a, -1), np.expand_dims(b, -1)], axis=-1)
+    mat_flat = mat.reshape((-1, 2))
+
+    # use this 2D matrix to calculate spatial distances between on positions on the grid
+    d = _squared_l2_distance(mat_flat, mat_flat)
+    for i in range(8):
+        # look for smaller distances with wrapped coordinates
+        d_i = _squared_l2_distance(mat_flat + wrap1[i], mat_flat + wrap2[i])
+        d = np.minimum(d, d_i)
+
+    return d
+
+
+def compute_spatial_distances_for_grid_non_wrapped(grid_shape):
+    # create 2D position matrix with tuples, i.e. [(0,0), (0,1)...(H-1, W-1)]
+    a, b = np.indices(grid_shape)
+    mat = np.concatenate([np.expand_dims(a, -1), np.expand_dims(b, -1)], axis=-1)
+    mat_flat = mat.reshape((-1, 2))
+
+    # use this 2D matrix to calculate spatial distances between on positions on the grid
+    d = _squared_l2_distance(mat_flat, mat_flat)
+    return d
+
+
+def sort_hddists_by_2d_dists(hd_dists: np.ndarray, ld_dists: np.ndarray) -> np.ndarray:
+    """
+    sorts a matrix so that row values are sorted by the spatial distance and in case they are equal, by the HD distance.
+    """
+    # max_hd_dist = np.max(hd_dists) + 1 # * 2 # 1.0001
+
+    # ld_hd_dists = hd_dists / max_hd_dist + ld_dists  # add normed HD dists (0 ... 0.9999) to the 2D int dists
+    ld_hd_dists = hd_dists + ld_dists  # add normed HD dists (0 ... 0.9999) to the 2D int dists
+    ld_hd_dists = np.sort(ld_hd_dists)  # then a normal sorting of the rows can be used
+
+    # sorted_HD_D = np.fmod(ld_hd_dists, 1) * max_hd_dist
+    sorted_hd_2d = np.fmod(ld_hd_dists, 1)
+
+    return sorted_hd_2d
 
 
 def _get_impossible_optimal_distance(features: np.ndarray):
@@ -289,6 +397,16 @@ def _squared_l2_distance(q, p):
     ps = np.sum(np.square(p), axis=-1, keepdims=True)
     qs = np.sum(np.square(q), axis=-1, keepdims=True)
     distance = ps - 2*np.matmul(p, q.T) + qs.T
+    return np.maximum(distance, 0)
+
+
+def _single_squared_l2_distance(p):
+    """
+    Calculates the squared L2 (Euclidean) distance using numpy.
+    :param p: numpy array with shape (n,) or (n, m)
+    """
+    ps = np.sum(np.square(p), axis=-1, keepdims=True)
+    distance = ps - 2*np.matmul(p, p.T) + ps.T
     return np.maximum(distance, 0)
 
 

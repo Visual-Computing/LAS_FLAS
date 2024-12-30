@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 import json
-import os
 
 from PIL import Image
 import numpy as np
-from vc_flas import flas, Grid, Arrangement
+from vc_flas import flas, Grid
 from vc_flas.metrics import distance_preservation_quality, distance_ratio_to_optimum
 from simple_tables import Table
 
