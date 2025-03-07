@@ -38,7 +38,7 @@ classifiers = [
 Homepage = "https://github.com/Visual-Computing/LAS_FLAS/tree/main"
 
 [project.optional-dependencies]
-test = ["pytest>=8.0"]
+test = ["pytest>=7.4"]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
