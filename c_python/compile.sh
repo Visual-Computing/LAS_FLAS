@@ -17,6 +17,14 @@ case "$1" in
 	ci)
 		cibuildwheel --output-dir "dist"
 		;;
+	release)
+		VERSION="v0.1.7"
+		git tag -d "$VERSION"
+		git commit -am "$VERSION"
+		git tag -a "$VERSION" -m "$VERSION"
+		git push
+		git push origin --tags
+		;;
 	*)
 		echo "invalid option"
 		;;
