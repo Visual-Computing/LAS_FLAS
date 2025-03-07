@@ -38,7 +38,7 @@ jobs:
         CIBW_ARCHS: auto64
         CIBW_BUILD_FRONTEND: "pip; args: --verbose"
         CIBW_ENVIRONMENT_MACOS: "MACOSX_DEPLOYMENT_TARGET=11.00"
-        CIBW_SKIP: "cp313-*"
+        CIBW_SKIP: "pp*"
 
     # upload artifacts
     - name: Upload Build Artifacts
