@@ -12,10 +12,10 @@ build-backend = "setuptools.build_meta"
 name = "vc_flas"
 dynamic = ["version"]
 dependencies = [
-    "numpy >=1.26,<3.0",
+    "numpy >=1.21,<3.0",
     "psutil",
 ]
-requires-python = ">= 3.11"
+requires-python = ">=3.7, <3.13"
 authors = [
     {name = "Bruno Schilling", email = "bruno.schilling@htw-berlin.de"},
     {name = "Nico Hezel"},

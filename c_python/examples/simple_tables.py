@@ -26,8 +26,8 @@ class Table:
     def line(self, **kwargs):
         for key in kwargs:
             if key not in self._normed_headers:
-                raise KeyError(f'Add value for header "{key}", but this header does not exist. '
-                               f'Valid headers are: {', '.join(self._normed_headers)}')
+                raise KeyError('Add value for header "{}", but this header does not exist. '
+                               'Valid headers are: {}'.format(key, ', '.join(self._normed_headers)))
         self._lines.append(kwargs)
 
     def __repr__(self):
@@ -80,7 +80,7 @@ class Table:
 
 class StringFormatter:
     def __init__(self, float_precision: int = 3):
-        self._float_fmt_string = f'{{:<.{float_precision}f}}'
+        self._float_fmt_string = '{{:<.{:.0f}f}}'.format(float_precision)
         self.formatters: Dict[Any, Callable[[Any, int, int], Tuple[str, int]]] = {
             float: self._format_float,
             int: StringFormatter._format_int

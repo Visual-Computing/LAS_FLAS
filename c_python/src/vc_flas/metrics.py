@@ -1,11 +1,11 @@
-from typing import Tuple
+from typing import Tuple, Optional
 
 import numpy as np
 import flas_cpp
 
 
 def mean_neighbor_distance(
-        sorted_features: np.ndarray, valid: np.ndarray | None = None, wrap: bool = False, ord: int = 2,
+        sorted_features: np.ndarray, valid: Optional[np.ndarray] = None, wrap: bool = False, ord: int = 2,
         reduce: str = 'mean', substitute_missing_neighbors: bool = False
 ) -> float:
     """
@@ -103,7 +103,7 @@ def mean_neighbor_distance(
     return dist_sum
 
 
-def distance_ratio_to_optimum(features: np.ndarray, valid: np.ndarray | None = None, wrap: bool = False) -> float:
+def distance_ratio_to_optimum(features: np.ndarray, valid: Optional[np.ndarray] = None, wrap: bool = False) -> float:
     """
     Calculates the ratio between the given sorting and a theoretical optimal sorting (that is, all 4 neighbors in the
     sorting are the closest neighbors in the dataset).
@@ -256,7 +256,7 @@ def _get_impossible_optimal_distance(features: np.ndarray):
 
 
 def distance_preservation_quality(
-        sorted_x: np.ndarray, valid: np.ndarray | None = None, wrap: bool = False, p: int = 2
+        sorted_x: np.ndarray, valid: Optional[np.ndarray] = None, wrap: bool = False, p: int = 2
 ):
     """
     Computes the Distance Preservation Quality DPQ_p(S)

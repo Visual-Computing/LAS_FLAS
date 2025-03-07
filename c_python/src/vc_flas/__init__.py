@@ -1,4 +1,4 @@
-from typing import Optional, List, Tuple, Any, Sequence, Mapping, Callable
+from typing import Optional, List, Tuple, Any, Sequence, Mapping, Callable, Union
 
 from . import metrics
 
@@ -80,7 +80,7 @@ class Grid:
         return np.not_equal(self.ids, -1)
 
     @classmethod
-    def from_grid_features(cls, features: np.ndarray, labels: np.ndarray | None = None):
+    def from_grid_features(cls, features: np.ndarray, labels: Optional[np.ndarray] = None):
         """
         Creates a new grid from the given features.
 
@@ -117,8 +117,8 @@ class Grid:
 
     @classmethod
     def from_features(
-            cls, features: np.ndarray, size: Tuple[int, int] | None = None, aspect_ratio: float = 1.0,
-            freeze_holes: bool = True, labels: np.ndarray | None = None
+            cls, features: np.ndarray, size: Optional[Tuple[int, int]] = None, aspect_ratio: float = 1.0,
+            freeze_holes: bool = True, labels: Optional[np.ndarray] = None
     ):
         """
         Creates a new grid from the given features.
@@ -181,7 +181,7 @@ class Labeler:
     def __init__(self):
         self.next_label = 0
 
-    def get_labels(self, features_shape: Tuple[int, int] | Tuple[int, int, int]):
+    def get_labels(self, features_shape: Union[Tuple[int, int], Tuple[int, int, int]]):
         """
         Get new labels for the given features.
         :param features_shape: The shape of the features to create labels for. Either (h, w, d) or (n, d).
@@ -197,14 +197,14 @@ class Labeler:
         self.next_label += n
         return result
 
-    def update(self, labels: int | np.ndarray):
+    def update(self, labels: Union[int, np.ndarray]):
         """
         Update internal state with labels from user.
         :param labels: The labels of the user with
         """
         self.next_label = max(np.max(labels)+1, self.next_label)
 
-    def update_or_create(self, labels: int | np.ndarray | None, features_shape: Tuple[int, int] | Tuple[int, int, int]):
+    def update_or_create(self, labels: Union[int, np.ndarray, None], features_shape: Union[Tuple[int, int], Tuple[int, int, int]]):
         """
         Creates new labels, if not given, and updates internal state with labels from user.
 
@@ -239,7 +239,7 @@ class GridBuilder:
             dim = 'unknown'
         return 'Grid(size={}, dim={})'.format(self.size, dim)
 
-    def add(self, features: np.ndarray, labels: int | np.ndarray | None = None) -> np.ndarray:
+    def add(self, features: np.ndarray, labels: Union[int, np.ndarray, None] = None) -> np.ndarray:
         """
         Add the given features anywhere to the grid.
         :param features: numpy array with shape (d,) or (n, d), where d is the feature dimensionality and n is the
@@ -267,8 +267,8 @@ class GridBuilder:
         return labels
 
     def put(
-            self, features: np.ndarray, pos: Tuple[int, int] | np.ndarray,
-            labels: int | np.ndarray | None = None, frozen: bool | np.ndarray = True
+            self, features: np.ndarray, pos: Union[Tuple[int, int], np.ndarray],
+            labels: Union[int, np.ndarray, None] = None, frozen: Union[bool, np.ndarray] = True
     ) -> np.ndarray:
         """
         Put the given features to the given position.
@@ -338,7 +338,7 @@ class GridBuilder:
             raise ValueError('labels must be >= 0 but got label {}'.format(np.min(labels)))
         return labels
 
-    def get_features(self, pos: Tuple[int, int] | np.ndarray) -> np.ndarray:
+    def get_features(self, pos: Union[Tuple[int, int], np.ndarray]) -> np.ndarray:
         """
         Get the features at the given position.
         :param pos: The position to get the feature from. Can be a tuple (y, x) or a numpy array with shape (n, 2) where
@@ -350,7 +350,7 @@ class GridBuilder:
 
         return self.grid_features[pos]
 
-    def get_labels(self, pos: Tuple[int, int] | np.ndarray) -> np.ndarray:
+    def get_labels(self, pos: Union[Tuple[int, int], np.ndarray]) -> np.ndarray:
         """
         Get the labels at the given position.
         :param pos: The position to get the labels from. Can be a tuple (y, x) or a numpy array with shape (n, 2) where
@@ -486,7 +486,7 @@ class Arrangement:
         self.grid = grid
         self.sorting = sorting
         self.wrap = wrap
-        self.sorted_features: np.ndarray | None = None  # Use for caching
+        self.sorted_features: Optional[np.ndarray] = None  # Use for caching
 
     def __repr__(self):
         """
@@ -500,7 +500,7 @@ class Arrangement:
         """
         return self.sorting.shape
 
-    def get_sorted_features(self, hole_value: float | np.ndarray = 0.0) -> np.ndarray:
+    def get_sorted_features(self, hole_value: Union[float, np.ndarray] = 0.0) -> np.ndarray:
         """
         Sort the features according to the given sorting. Holes are filled with the given hole_value.
         :param hole_value: Scalar or numpy array with shape (d,) defining the value to fill holes with.
@@ -528,7 +528,7 @@ class Arrangement:
         return labels[self.sorting.flatten()].reshape(self.sorting.shape)
 
     def sort_by_labels(
-            self, label_to_obj: Sequence | Mapping[int, Any] | Callable[[int], Any], hole_value: Any = None
+            self, label_to_obj: Union[Sequence, Mapping[int, Any], Callable[[int], Any]], hole_value: Any = None
     ) -> List[List[Any]]:
         """
         Given a translation label -> obj, this function creates a two-dimensional list, where result[y][x] contains the
@@ -594,8 +594,8 @@ class Arrangement:
 
 
 def flas(
-        grid: Grid | np.ndarray, wrap: bool = False, radius_decay: float = 0.93,
-        callback: Callable[[float], bool] | None = None, optimize_narrow_grids: int = 1, max_swap_positions: int = 9,
+        grid: Union[Grid, np.ndarray], wrap: bool = False, radius_decay: float = 0.93,
+        callback: Optional[Callable[[float], bool]] = None, optimize_narrow_grids: int = 1, max_swap_positions: int = 9,
         weight_swappable: float = 1.0, weight_non_swappable: float = 100.0, weight_hole: float = 0.01, seed: int = -1
 ) -> Arrangement:
     """
