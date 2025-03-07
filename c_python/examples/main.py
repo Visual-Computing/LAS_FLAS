@@ -8,7 +8,7 @@ from vc_flas.metrics import distance_preservation_quality, distance_ratio_to_opt
 from simple_tables import Table
 
 N_ALL_FEATURES = 10000
-HEIGHT, WIDTH = 256, 256
+HEIGHT, WIDTH = 200, 300
 QUERY_SIZE = HEIGHT * WIDTH - 5
 DIM = 3
 
@@ -22,17 +22,45 @@ class ProgressStopper:
 
 
 def create_progress():
-    rng = np.random.default_rng(42)
-    features = rng.random((HEIGHT, WIDTH, DIM)).astype(np.float32)
+    rng = np.random.default_rng(45)
+    # features = rng.random((HEIGHT, WIDTH, DIM)).astype(np.float32)
+    features = rng.normal(0.2, 0.6, size=(HEIGHT, WIDTH, DIM)).astype(np.float32)
+    features = np.clip(features, 0.0, 1.0)
 
-    n_steps = 100
-    for i in range(n_steps):
-        arrangement = flas(features, radius_decay=0.93, callback=ProgressStopper((i + 1) / n_steps), seed=42)
+    # features *= np.array([[[0.25, 0.4, 0.7]]])
+    # features += np.array([[[0.1, 0.2, 0.3]]])
+
+    # arrangement = flas(features, radius_decay=0.93, seed=42)
+    # sorted_features = arrangement.get_sorted_features()
+    # image = Image.fromarray((sorted_features * 255).astype(np.uint8))
+    # image.save(f'result.png', 'PNG')
+    # return
+
+    i = 0
+
+    start_image = Image.fromarray((features * 255).astype(np.uint8))
+    for _ in range(10):
+        start_image.save(f'images/gif/image{i:03}.png', 'PNG')
+        print(f'saved images/gif/image{i:03}.png')
+        i += 1
+
+    n_steps = 150
+    end_image = None
+    for p in range(n_steps):
+        arrangement = flas(features, radius_decay=0.93, callback=ProgressStopper((p + 1) / n_steps), seed=42, wrap=False)
         sorted_features = arrangement.get_sorted_features()
 
         image = Image.fromarray((sorted_features * 255).astype(np.uint8))
         image.save(f'images/gif/image{i:03}.png', 'PNG')
-        print(f'saved image {i+1:02}')
+        print(f'saved images/gif/image{i:03}.png')
+        end_image = image
+
+        i += 1
+
+    for _ in range(50):
+        end_image.save(f'images/gif/image{i:03}.png', 'PNG')
+        print(f'saved images/gif/image{i:03}.png')
+        i += 1
 
 
 def try_narrow():
@@ -142,8 +170,8 @@ def import_grid_and_calc_metric(path, table):
 
 if __name__ == '__main__':
     # test_1d()
-    # create_progress()
+    create_progress()
     # try_narrow()
     # example_2d()
     # try_normal()
-    import_and_try()
+    # import_and_try()
