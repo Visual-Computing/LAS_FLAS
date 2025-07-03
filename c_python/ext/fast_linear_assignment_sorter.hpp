@@ -906,7 +906,7 @@ inline void check_random_swaps(const InternalData *data, int radius, float sampl
   free(swap_indices);
 }
 
-inline long test_lap(const int dim, int *dist_mat) {
+inline long test_lap(const int dim, int *dist_mat, bool show_permutation) {
   auto start = std::chrono::high_resolution_clock::now();
   std::function<int(int,int)> get_cost = [&dist_mat, &dim](int x, int y) -> int {
     return dist_mat[x * dim + y];
@@ -920,11 +920,19 @@ inline long test_lap(const int dim, int *dist_mat) {
   lap::solve<int>(dim, costMatrix, iterator, permutation, true);
   auto end = std::chrono::high_resolution_clock::now();
 
+  if (show_permutation) {
+    std::cout << "lap permutation: ";
+    for (int i = 0; i < std::min(10, dim); i++) {
+      std::cout << permutation[i] << " ";
+    }
+    std::cout << std::endl;
+  }
+
   free(permutation);
   return std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
 }
 
-inline long test_omp(const int dim, int *dist_mat) {
+inline long test_omp(const int dim, int *dist_mat, bool show_permutation) {
   std::function<int(int,int)> get_cost = [&dist_mat, &dim](int x, int y) -> int {
     return dist_mat[x * dim + y];
   };
@@ -939,14 +947,30 @@ inline long test_omp(const int dim, int *dist_mat) {
   lap::omp::solve<int>(dim, costMatrix, iterator, permutation, true);
   auto end_omp = std::chrono::high_resolution_clock::now();
 
+  if (show_permutation) {
+    std::cout << "omp permutation: ";
+    for (int i = 0; i < std::min(10, dim); i++) {
+      std::cout << permutation[i] << " ";
+    }
+    std::cout << std::endl;
+  }
+
   free(permutation);
   return std::chrono::duration_cast<std::chrono::microseconds>(end_omp - start_omp).count();
 }
 
-inline long test_jv(const int dim, const int *dist_mat) {
+inline long test_jv(const int dim, const int *dist_mat, bool show_permutation) {
   auto start_jv = std::chrono::high_resolution_clock::now();
   int* permutation = compute_assignment(dist_mat, dim);
   auto end_jv = std::chrono::high_resolution_clock::now();
+
+  if (show_permutation) {
+    std::cout << "jv  permutation: ";
+    for (int i = 0; i < std::min(10, dim); i++) {
+      std::cout << permutation[i] << " ";
+    }
+    std::cout << std::endl;
+  }
 
   free(permutation);
   return std::chrono::duration_cast<std::chrono::microseconds>(end_jv - start_jv).count();
@@ -955,6 +979,7 @@ inline long test_jv(const int dim, const int *dist_mat) {
 inline void test_solver(const int dim) {
   int *dist_mat = static_cast<int *>(malloc(dim * dim * sizeof(int)));
   int runs = 50;
+  bool show_permutation = false;
 
   // Initialize random distance matrix
   std::random_device rd;
@@ -970,9 +995,9 @@ inline void test_solver(const int dim) {
       dist_mat[i] = dist(gen);
     }
 
-    duration_jv += test_jv(dim, dist_mat);
-    duration_lap += test_lap(dim, dist_mat);
-    duration_omp += test_omp(dim, dist_mat);
+    duration_jv += test_jv(dim, dist_mat, show_permutation);
+    duration_lap += test_lap(dim, dist_mat, show_permutation);
+    duration_omp += test_omp(dim, dist_mat, show_permutation);
   }
 
   std::cout << "times for dim " << dim << " over " << runs << " runs:" << std::endl;
