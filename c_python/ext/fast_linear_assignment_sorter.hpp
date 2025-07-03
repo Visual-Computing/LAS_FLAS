@@ -11,6 +11,10 @@
 
 #include "map_field.hpp"
 #include "junker_volgenant_solver.hpp"
+#define LAP_QUIET
+#define LAP_OPENMP
+#include "lap_solver/lap.h"
+#include <chrono>
 
 namespace py = pybind11;
 typedef std::mt19937 RandomEngine;
@@ -139,6 +143,8 @@ struct InternalData {
    */
   RandomEngine* rng;
 };
+
+inline long long total_execution_time = 0;
 
 inline InternalData create_internal_data(MapField *map_fields, int columns, int rows, int dim, int max_swap_positions, RandomEngine* rng) {
   InternalData data{};
@@ -795,7 +801,27 @@ inline void do_swaps(const InternalData *data, int num_swaps) {
 
   if (num_valid > 0) {
     calc_dist_lut_l2_int(data, num_swaps);
+
+    auto start = std::chrono::high_resolution_clock::now();
+
+    /*
     int *permutation = compute_assignment(data->dist_lut, num_swaps);
+    */
+
+    int* permutation = static_cast<int *>(malloc(num_swaps * sizeof(int)));
+    int* dist_lut = data->dist_lut;
+    std::function<int(int,int)> get_cost = [&dist_lut, &num_swaps](int x, int y)  -> int {
+      return dist_lut[x * num_swaps + y];
+    };
+
+	  lap::SimpleCostFunction<int, std::function<int(int, int)>> cost_function(get_cost);
+    lap::TableCost<int> costMatrix(num_swaps, num_swaps, cost_function);
+    lap::DirectIterator<int, lap::TableCost<int>> iterator(costMatrix);
+    lap::solve<int>(num_swaps, costMatrix, iterator, permutation, true);
+
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+    total_execution_time += duration;
 
     for (int i = 0; i < num_swaps; i++) {
       data->map_fields[data->swap_positions[permutation[i]]] = data->swapped_elements[i];
@@ -880,6 +906,83 @@ inline void check_random_swaps(const InternalData *data, int radius, float sampl
   free(swap_indices);
 }
 
+inline long test_lap(const int dim, int *dist_mat) {
+  auto start = std::chrono::high_resolution_clock::now();
+  std::function<int(int,int)> get_cost = [&dist_mat, &dim](int x, int y) -> int {
+    return dist_mat[x * dim + y];
+  };
+
+  int* permutation = static_cast<int *>(malloc(dim * sizeof(int)));
+
+  lap::SimpleCostFunction<int, std::function<int(int, int)>> cost_function(get_cost);
+  lap::TableCost<int> costMatrix(dim, dim, cost_function);
+  lap::DirectIterator<int, lap::TableCost<int>> iterator(costMatrix);
+  lap::solve<int>(dim, costMatrix, iterator, permutation, true);
+  auto end = std::chrono::high_resolution_clock::now();
+
+  free(permutation);
+  return std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+}
+
+inline long test_omp(const int dim, int *dist_mat) {
+  std::function<int(int,int)> get_cost = [&dist_mat, &dim](int x, int y) -> int {
+    return dist_mat[x * dim + y];
+  };
+
+  auto start_omp = std::chrono::high_resolution_clock::now();
+  int* permutation = static_cast<int *>(malloc(dim * sizeof(int)));
+
+  lap::omp::SimpleCostFunction<int, std::function<int(int, int)>> cost_function(get_cost);
+  lap::omp::Worksharing ws(dim, 8);
+  lap::omp::TableCost<int> costMatrix(dim, dim, cost_function, ws);
+  lap::omp::DirectIterator<int, lap::omp::TableCost<int>> iterator(costMatrix, ws);
+  lap::omp::solve<int>(dim, costMatrix, iterator, permutation, true);
+  auto end_omp = std::chrono::high_resolution_clock::now();
+
+  free(permutation);
+  return std::chrono::duration_cast<std::chrono::microseconds>(end_omp - start_omp).count();
+}
+
+inline long test_jv(const int dim, const int *dist_mat) {
+  auto start_jv = std::chrono::high_resolution_clock::now();
+  int* permutation = compute_assignment(dist_mat, dim);
+  auto end_jv = std::chrono::high_resolution_clock::now();
+
+  free(permutation);
+  return std::chrono::duration_cast<std::chrono::microseconds>(end_jv - start_jv).count();
+}
+
+inline void test_solver(const int dim) {
+  int *dist_mat = static_cast<int *>(malloc(dim * dim * sizeof(int)));
+  int runs = 50;
+
+  // Initialize random distance matrix
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_int_distribution<int> dist(0, 100);
+
+  long duration_jv = 0;
+  long duration_lap = 0;
+  long duration_omp = 0;
+
+  for (int i = 0; i < runs; i++) {
+    for (int i = 0; i < dim * dim; i++) {
+      dist_mat[i] = dist(gen);
+    }
+
+    duration_jv += test_jv(dim, dist_mat);
+    duration_lap += test_lap(dim, dist_mat);
+    duration_omp += test_omp(dim, dist_mat);
+  }
+
+  std::cout << "times for dim " << dim << " over " << runs << " runs:" << std::endl;
+  std::cout << "  JV  solver execution time: " << duration_jv / runs << " microseconds" << std::endl;
+  std::cout << "  LAP solver execution time: " << duration_lap / runs << " microseconds" << std::endl;
+  std::cout << "  OMP solver execution time: " << duration_omp / runs << " microseconds" << std::endl;
+
+  free(dist_mat);
+}
+
 /**
  *
  * @param map_fields Array of MapFields with length columns * rows. If a map field has id == -1, it is not used for
@@ -950,7 +1053,16 @@ inline void do_sorting_full(
                 throw py::error_already_set();
   } while (rad > settings->radius_end);
 
+  // std::cout << "Total execution time: " << total_execution_time / 1000000 << " milliseconds" << std::endl;
   free_internal_data(&data);
+
+  test_solver(9);
+  test_solver(16);
+  test_solver(25);
+  test_solver(32);
+  test_solver(64);
+  test_solver(11*11);
+  test_solver(25*25);
 }
 
 #endif //FAST_LINEAR_ASSIGNMENT_SORTER_H

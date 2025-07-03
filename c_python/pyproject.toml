@@ -15,7 +15,7 @@ dependencies = [
     "numpy >=1.21,<3.0",
     "psutil",
 ]
-requires-python = ">=3.7, <3.13"
+requires-python = ">=3.7"
 authors = [
     {name = "Bruno Schilling", email = "bruno.schilling@htw-berlin.de"},
     {name = "Nico Hezel"},

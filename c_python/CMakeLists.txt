@@ -6,6 +6,9 @@ cmake_policy(SET CMP0148 NEW)
 # Project name and language
 project(flas_cpp LANGUAGES CXX)
 
+# Find OpenMP package
+find_package(OpenMP REQUIRED)
+
 # Use C++17
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -24,6 +27,7 @@ set(LIBRARY_SOURCES
 	ext/junker_volgenant_solver.hpp
 	ext/map_field.hpp
 	ext/metrics.hpp
+	ext/lap_solver/lap.h
 )
 
 # Create the library
@@ -31,6 +35,7 @@ add_library(flas_c INTERFACE)
 target_include_directories(flas_c INTERFACE
     ${CMAKE_SOURCE_DIR}/ext
 )
+target_link_libraries(flas_c INTERFACE OpenMP::OpenMP_CXX)
 
 # Add Python bindings
 pybind11_add_module(flas_cpp src/flas_cpp/flas_cpp.cpp)

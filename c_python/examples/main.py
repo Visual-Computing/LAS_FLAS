@@ -77,11 +77,11 @@ def try_narrow():
 
 
 def try_normal():
-    h, w, d = 124, 124, 3
+    h, w, d = 8, 8, 3
     features = np.random.random((h, w, d))
     grid = Grid.from_grid_features(features)
 
-    arrangement = flas(grid, radius_decay=0.93)
+    arrangement = flas(grid, radius_decay=0.93, max_swap_positions=9)
 
     sorted_features = arrangement.get_sorted_features()
 
@@ -170,8 +170,8 @@ def import_grid_and_calc_metric(path, table):
 
 if __name__ == '__main__':
     # test_1d()
-    create_progress()
+    # create_progress()
     # try_narrow()
     # example_2d()
-    # try_normal()
+    try_normal()
     # import_and_try()
