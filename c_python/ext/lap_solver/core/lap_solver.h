@@ -735,7 +735,7 @@ namespace lap
 	}
 
 	template <class SC, class CF, class I>
-	void solve(int dim, int dim2, CF &costfunc, I &iterator, int *rowsol, bool use_epsilon)
+	void solve(int dim, int dim2, CF &costfunc2, I &iterator, int *rowsol, bool use_epsilon)
 
 		// input:
 		// dim        - problem size

@@ -932,6 +932,48 @@ inline long test_lap(const int dim, int *dist_mat, bool show_permutation) {
   return std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
 }
 
+class CostMatrix {
+public:
+  int dim;
+  int* dist_mat;
+
+  CostMatrix(int dim, int* dist_mat)
+    : dim(dim), dist_mat(dist_mat)
+  {}
+
+  int* getRow(int row) {
+    return dist_mat + row * dim;
+  }
+};
+
+inline long test_lap2(const int dim, int *dist_mat, bool show_permutation) {
+  auto start = std::chrono::high_resolution_clock::now();
+  std::function<int(int,int)> get_cost = [&dist_mat, &dim](int x, int y) -> int {
+    return dist_mat[x * dim + y];
+  };
+
+  int* permutation = static_cast<int *>(malloc(dim * sizeof(int)));
+
+  CostMatrix costMatrix(dim, dist_mat);
+
+  // lap::SimpleCostFunction<int, std::function<int(int, int)>> cost_function(get_cost);
+  // lap::TableCost<int> costMatrix(dim, dim, cost_function);
+  lap::DirectIterator<int, CostMatrix> iterator(costMatrix);
+  lap::solve<int>(dim, costMatrix, iterator, permutation, true);
+  auto end = std::chrono::high_resolution_clock::now();
+
+  if (show_permutation) {
+    std::cout << "lap permutation: ";
+    for (int i = 0; i < std::min(10, dim); i++) {
+      std::cout << permutation[i] << " ";
+    }
+    std::cout << std::endl;
+  }
+
+  free(permutation);
+  return std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+}
+
 inline long test_omp(const int dim, int *dist_mat, bool show_permutation) {
   std::function<int(int,int)> get_cost = [&dist_mat, &dim](int x, int y) -> int {
     return dist_mat[x * dim + y];
@@ -988,6 +1030,7 @@ inline void test_solver(const int dim) {
 
   long duration_jv = 0;
   long duration_lap = 0;
+  long duration_lap2 = 0;
   long duration_omp = 0;
 
   for (int i = 0; i < runs; i++) {
@@ -997,13 +1040,15 @@ inline void test_solver(const int dim) {
 
     duration_jv += test_jv(dim, dist_mat, show_permutation);
     duration_lap += test_lap(dim, dist_mat, show_permutation);
+    duration_lap2 += test_lap2(dim, dist_mat, show_permutation);
     duration_omp += test_omp(dim, dist_mat, show_permutation);
   }
 
   std::cout << "times for dim " << dim << " over " << runs << " runs:" << std::endl;
-  std::cout << "  JV  solver execution time: " << duration_jv / runs << " microseconds" << std::endl;
-  std::cout << "  LAP solver execution time: " << duration_lap / runs << " microseconds" << std::endl;
-  std::cout << "  OMP solver execution time: " << duration_omp / runs << " microseconds" << std::endl;
+  std::cout << "  JV   solver execution time: " << duration_jv / runs << " microseconds" << std::endl;
+  std::cout << "  LAP  solver execution time: " << duration_lap / runs << " microseconds" << std::endl;
+  std::cout << "  LAP2 solver execution time: " << duration_lap2 / runs << " microseconds" << std::endl;
+  std::cout << "  OMP  solver execution time: " << duration_omp / runs << " microseconds" << std::endl;
 
   free(dist_mat);
 }
