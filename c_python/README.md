@@ -17,7 +17,7 @@ This directory contains the python implementation and shows how to use it.
 
 ## Installation
 ```shell
-pip install vc_flas
+pip install vc-flas
 ```
 
 ### Install from sources
